@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import ManagerEmployee, Feedback
+from .models import ManagerEmployee, Feedback, SwotAnalysis
 
 @admin.register(ManagerEmployee)
 class ManagerEmployeeAdmin(admin.ModelAdmin):
@@ -12,3 +12,5 @@ class FeedbackAdmin(admin.ModelAdmin):
     list_filter = ('feedback_type',)
     search_fields = ('giver', 'receiver')
     readonly_fields = ('created_at',)
+
+admin.site.register(SwotAnalysis)

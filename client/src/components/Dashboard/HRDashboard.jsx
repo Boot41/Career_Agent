@@ -17,6 +17,7 @@ import {
   UserCircle2,
   Network
 } from 'lucide-react';
+import Modal from 'react-modal';
 
 const HRDashboard = () => {
   // Organization Hierarchy State
@@ -60,6 +61,12 @@ const HRDashboard = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [id, setId] = useState(null);
   const [selectedRole, setSelectedRole] = useState("");  // Add role state
+  // New state variable for SWOT analysis employee ID
+  const [swotEmployeeId, setSwotEmployeeId] = useState(null);
+  const [swotLoading, setSwotLoading] = useState(false);
+  const [swotError, setSwotError] = useState(null);
+  const [swotData, setSwotData] = useState(null);
+  const [isSwotModalOpen, setIsSwotModalOpen] = useState(false);
 
   // Log selectedRole changes
   useEffect(() => {
@@ -91,7 +98,7 @@ const HRDashboard = () => {
               params: { organization_id: parsedUserData.organization_id }
             });
 
-            if (response.data && response.data.success) {
+            if (response.status === 200) {
               setOrganizationHierarchy({
                 managers: response.data.managers || [],
                 unassignedEmployees: response.data.unassigned_employees || [],
@@ -165,22 +172,23 @@ const HRDashboard = () => {
         feedback_receiver: params.feedbackReceiver
       });
 
-      // Set generated questions from API response
-      setGeneratedQuestions(response.data.questions);
+      if (response.status === 200) {
+        // Set generated questions from API response
+        setGeneratedQuestions(response.data.questions);
+      } else {
+        console.error('Error generating custom questions:', response.statusText);
+      }
     } catch (error) {
       console.error('Error generating custom questions:', error);
       
       // More detailed error logging
       if (error.response) {
-        // The request was made and the server responded with a status code
         console.error('Error response data:', error.response.data);
         console.error('Error response status:', error.response.status);
         console.error('Error response headers:', error.response.headers);
       } else if (error.request) {
-        // The request was made but no response was received
         console.error('Error request:', error.request);
       } else {
-        // Something happened in setting up the request that triggered an Error
         console.error('Error message:', error.message);
       }
 
@@ -248,14 +256,17 @@ const HRDashboard = () => {
       // Call the API to create feedback
       const response = await axios.post("http://localhost:8001/feedback/create-feedback/", payload);
       
-      console.log('Feedback created successfully:', response.data);
-      
-      // Clear generated questions after successful submission
-      setGeneratedQuestions([]);
-      
-      // Show success message
-      alert('Feedback questions accepted and saved successfully!');
-      
+      if (response.status === 200) {
+        console.log('Feedback created successfully:', response.data);
+        
+        // Clear generated questions after successful submission
+        setGeneratedQuestions([]);
+        
+        // Show success message
+        alert('Feedback questions accepted and saved successfully!');
+      } else {
+        console.error('Error accepting questions:', response.statusText);
+      }
     } catch (error) {
       console.error('Error accepting questions:', error);
       
@@ -289,23 +300,91 @@ const HRDashboard = () => {
     setSelectedRole(newRole);
   };
 
-  const generateSWOTAnalysis = (employeeId) => {
-    // Logic to generate SWOT analysis
-    console.log('Generating SWOT analysis for employee ID:', employeeId);
-    // Here you would typically make an API call to fetch the SWOT data
+  const generateSWOTAnalysis = async (employeeId) => {
+    setSwotEmployeeId(employeeId);
+    setSwotLoading(true);
+    setSwotError(null);
+    
+    try {
+      // Add force_new=true to force a new SWOT analysis generation
+      console.log(employeeId)
+      const response = await axios.get(`http://localhost:8001/feedback/generate/?user_id=${employeeId}&force_new=true`);
+      
+      if (response.status === 200) {
+        setSwotData(response.data);
+      } else {
+        setSwotError('Failed to generate SWOT analysis');
+      }
+    } catch (error) {
+      console.error('Error generating SWOT analysis:', error);
+      setSwotError(error.response?.data?.error || 'Failed to generate SWOT analysis');
+    } finally {
+      setSwotLoading(false);
+    }
   };
 
   const checkSWOTAvailability = async (employeeId) => {
+    // Store the employee ID in the swotEmployeeId state
+    setSwotEmployeeId(employeeId);
+    console.log('Setting SWOT analysis employee ID for availability check:', employeeId);
+    
     try {
-      const response = await axios.get(`http://localhost:8001/swot/check-availability/${employeeId}`);
-      if (response.data && response.data.available) {
-        alert(`SWOT analysis is available for employee ID: ${employeeId}`);
+      // Use the employeeId parameter directly for the API call
+      const response = await axios.get(`http://localhost:8001/feedback/swot-analysis/availability/?user_id=${employeeId}`);
+      
+      // Log the complete response for debugging
+      console.log('SWOT Analysis API Response:', response);
+      console.log('SWOT Analysis Data:', response.data);
+      
+      if (response.status === 200) {
+        if (response.data && response.data.length > 0) {
+          console.log('SWOT analyses found:', response.data.length);
+          console.log('SWOT data details:', JSON.stringify(response.data, null, 2));
+          alert(`SWOT analysis is available for employee ID: ${employeeId}`);
+          setIsSwotModalOpen(true);
+          setSwotData(response.data);
+        } else {
+          console.log('No SWOT analyses found in the response data');
+          alert(`SWOT analysis is not available for employee ID: ${employeeId}`);
+        }
       } else {
-        alert(`SWOT analysis is not available for employee ID: ${employeeId}`);
+        console.error('Error checking SWOT availability:', response.statusText);
       }
     } catch (error) {
       console.error('Error checking SWOT availability:', error);
-      alert('Failed to check SWOT availability. Please try again.');
+      console.error('Error response:', error.response);
+      
+      // Check if it's a 404 error (No SWOT analyses found)
+      if (error.response && error.response.status === 404) {
+        console.log('404 response received. Message:', error.response.data.message);
+        alert(`No SWOT analyses found for employee ID: ${employeeId}`);
+      } else {
+        alert('Failed to check SWOT availability. Please try again.');
+      }
+    }
+  };
+
+  // Function to delete a SWOT analysis
+  const deleteSWOTAnalysis = async (swotId, userId, year) => {
+    try {
+      const response = await axios.post('http://localhost:8001/feedback/delete-swot/', {
+        user_id: userId,
+        year: year
+      });
+      
+      if (response.status === 200) {
+        // Remove the deleted SWOT analysis from the state
+        setSwotData(prevData => prevData.filter(swot => swot.id !== swotId));
+        alert('SWOT analysis deleted successfully');
+        
+        // Close the modal if no SWOT analyses remain
+        if (swotData.length === 1) {
+          setIsSwotModalOpen(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting SWOT analysis:', error);
+      alert('Failed to delete SWOT analysis. Please try again.');
     }
   };
 
@@ -521,7 +600,7 @@ const HRDashboard = () => {
     return (
       <div className="space-y-4">
         {employees.map(employee => (
-          <div key={employee.id} className="flex justify-between items-center bg-white shadow-md rounded-lg p-4">
+          <div key={employee.id} className="flex justify-between items-center bg-white shadow-sm border border-gray-200 rounded-lg p-4">
             <div>
               <h3 className="font-bold text-lg">{employee.name}</h3>
               <p className="text-gray-600">{employee.role}</p>
@@ -541,6 +620,31 @@ const HRDashboard = () => {
   };
 
   const renderSWOTAnalysis = () => {
+    const allPeople = [
+      ...organizationHierarchy.managers.map(manager => ({
+        ...manager, 
+        type: 'manager',
+        displayName: `${manager.name} (Manager)`
+      })),
+      ...organizationHierarchy.managers.flatMap(manager => 
+        (manager.team || []).map(employee => ({
+          ...employee, 
+          type: 'employee',
+          displayName: `${employee.name} (Employee)`
+        }))
+      ),
+      ...organizationHierarchy.unassignedEmployees.map(employee => ({
+        ...employee, 
+        type: 'employee',
+        displayName: `${employee.name} (Unassigned)`
+      }))
+    ];
+
+    // Find the selected employee details if swotEmployeeId is set
+    const selectedSwotEmployee = swotEmployeeId 
+      ? allPeople.find(person => person.id === swotEmployeeId) 
+      : null;
+
     return (
       <div className="space-y-6">
         <div className="bg-white shadow-md rounded-lg p-6">
@@ -548,9 +652,208 @@ const HRDashboard = () => {
             <FileText className="mr-3 text-indigo-600" /> 
             SWOT Analysis
           </h2>
-          {renderEmployeeList()}
+
+          {/* Display selected employee for SWOT analysis */}
+          {selectedSwotEmployee && (
+            <div className="bg-green-50 p-4 rounded-md mb-6">
+              <h3 className="text-lg font-semibold text-green-800 mb-2">Selected Employee for SWOT Analysis</h3>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <UserCircle2 className="text-green-600 mr-3" size={36} />
+                  <div>
+                    <p className="font-medium">{selectedSwotEmployee.name}</p>
+                    <p className="text-sm text-gray-600">{selectedSwotEmployee.email}</p>
+                    <p className="text-xs text-gray-500">ID: {selectedSwotEmployee.id}</p>
+                  </div>
+                </div>
+                <div>
+                  <button 
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition mr-2"
+                    onClick={() => generateSWOTAnalysis(swotEmployeeId)}
+                    disabled={swotLoading}
+                  >
+                    {swotLoading ? (
+                      <>
+                        <Loader2 className="animate-spin inline mr-2" size={16} />
+                        Generating...
+                      </>
+                    ) : (
+                      'Generate SWOT Analysis'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SWOT Analysis Results */}
+          {swotData && (
+            <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">SWOT Analysis Results</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-blue-50 p-4 rounded-md">
+                  <h4 className="font-bold text-blue-800 mb-2">Strengths</h4>
+                  <p className="text-gray-700 whitespace-pre-line">{swotData.strengths}</p>
+                </div>
+                
+                <div className="bg-red-50 p-4 rounded-md">
+                  <h4 className="font-bold text-red-800 mb-2">Weaknesses</h4>
+                  <p className="text-gray-700 whitespace-pre-line">{swotData.weaknesses}</p>
+                </div>
+                
+                <div className="bg-green-50 p-4 rounded-md">
+                  <h4 className="font-bold text-green-800 mb-2">Opportunities</h4>
+                  <p className="text-gray-700 whitespace-pre-line">{swotData.opportunities}</p>
+                </div>
+                
+                <div className="bg-yellow-50 p-4 rounded-md">
+                  <h4 className="font-bold text-yellow-800 mb-2">Threats</h4>
+                  <p className="text-gray-700 whitespace-pre-line">{swotData.threats}</p>
+                </div>
+              </div>
+              
+              <div className="mt-6">
+                <h4 className="font-bold text-gray-800 mb-2">Summary</h4>
+                <p className="text-gray-700 whitespace-pre-line">{swotData.summary}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {swotError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg mb-6">
+              <h4 className="font-bold mb-2">Error</h4>
+              <p>{swotError}</p>
+            </div>
+          )}
+
+          {/* Employee Selection */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Select Employee for SWOT Analysis
+            </label>
+            <select
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              value={swotEmployeeId || ''}
+              onChange={(e) => {
+                const selectedId = e.target.value;
+                console.log('Setting SWOT employee ID:', selectedId);
+                setSwotEmployeeId(selectedId);
+              }}
+            >
+              <option value="">Select an Employee</option>
+              {allPeople.map(person => (
+                <option key={person.id} value={person.id}>
+                  {person.displayName} - {person.email}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* List of People */}
+          <div className="space-y-4">
+            {allPeople.map(person => (
+              <div key={person.id} className="flex justify-between items-center bg-white shadow-sm border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <UserCircle2 className={`mr-3 ${person.type === 'manager' ? 'text-indigo-600' : 'text-green-600'}`} size={36} />
+                  <div>
+                    <p className="font-medium">{person.name}</p>
+                    <p className="text-sm text-gray-600">{person.email}</p>
+                    <p className="text-xs text-gray-500">ID: {person.id}</p>
+                  </div>
+                </div>
+                <div>
+                  <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition mr-2" onClick={() => generateSWOTAnalysis(person.id)}>
+                    Generate SWOT Analysis
+                  </button>
+                  <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition" onClick={() => checkSWOTAvailability(person.id)}>
+                    Check SWOT Availability
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
+    );
+  };
+
+  const SwotModal = () => {
+    return (
+      <Modal 
+        isOpen={isSwotModalOpen} 
+        onRequestClose={() => setIsSwotModalOpen(false)}
+        className="bg-white p-6 rounded-lg shadow-xl max-w-4xl mx-auto mt-20 max-h-[80vh] overflow-y-auto"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex justify-center"
+      >
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-800">SWOT Analysis</h2>
+          <button 
+            onClick={() => setIsSwotModalOpen(false)}
+            className="p-2 rounded-full hover:bg-gray-100"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        {swotData && swotData.length > 0 ? (
+          swotData.map((swot, index) => (
+            <div key={swot.id} className="mb-8 p-6 border border-gray-200 rounded-lg bg-gray-50">
+              <div className="mb-4 pb-3 border-b border-gray-200">
+                <h3 className="text-xl font-semibold text-gray-700">SWOT Analysis for Year: {swot.year}</h3>
+                <p className="text-sm text-gray-500">Created: {new Date(swot.created_at).toLocaleDateString()}</p>
+              </div>
+              
+              <div className="mb-4">
+                <h4 className="font-bold text-gray-700 mb-2">Summary</h4>
+                <p className="text-gray-600 whitespace-pre-line">{swot.summary}</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-4 bg-green-50 border border-green-100 rounded-lg">
+                  <h4 className="font-bold text-green-700 mb-2">Strengths</h4>
+                  <p className="text-gray-600 whitespace-pre-line">{swot.strengths}</p>
+                </div>
+                
+                <div className="p-4 bg-red-50 border border-red-100 rounded-lg">
+                  <h4 className="font-bold text-red-700 mb-2">Weaknesses</h4>
+                  <p className="text-gray-600 whitespace-pre-line">{swot.weaknesses}</p>
+                </div>
+                
+                <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                  <h4 className="font-bold text-blue-700 mb-2">Opportunities</h4>
+                  <p className="text-gray-600 whitespace-pre-line">{swot.opportunities}</p>
+                </div>
+                
+                <div className="p-4 bg-yellow-50 border border-yellow-100 rounded-lg">
+                  <h4 className="font-bold text-yellow-700 mb-2">Threats</h4>
+                  <p className="text-gray-600 whitespace-pre-line">{swot.threats}</p>
+                </div>
+              </div>
+              
+              <div className="mt-4 flex justify-end">
+                <button 
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to delete this SWOT analysis?')) {
+                      deleteSWOTAnalysis(swot.id, swot.receiver_id, swot.year);
+                    }
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-600">No SWOT analysis found for this user.</p>
+          </div>
+        )}
+      </Modal>
     );
   };
 
@@ -712,13 +1015,6 @@ const HRDashboard = () => {
                 renderSWOTAnalysis()
               )}
             </div>
-
-            {/* Right Sidebar */}
-            <HRRightSidebar 
-              onEmployeeSelect={handleEmployeeSelect} 
-              onInviteEmployee={handleInviteEmployee}
-              organizationHierarchy={organizationHierarchy}
-            />
           </div>
         </main>
       </div>
@@ -783,6 +1079,7 @@ const HRDashboard = () => {
           </div>
         </div>
       )}
+      <SwotModal />
     </div>
   );
 };

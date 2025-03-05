@@ -2,16 +2,26 @@ from django.http import JsonResponse
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from .models import Feedback, ManagerEmployee
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from .models import Feedback, ManagerEmployee, SwotAnalysis
 import json
 import os
 from groq import Groq
-from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework import status
 from .serializers import FeedbackPromptSerializer, FeedbackCreateSerializer, FeedbackSerializer
 from apps.authentication.models import AuthUser
 from apps.organizations.models import Organization
+import openai
+import datetime
+from django.contrib.auth.models import User
+import re
+import dotenv
+import re
+
+# openai is used with Groq API key for compatibility
+openai.api_key = os.environ.get('GROQ_API_KEY')
+print(openai.api_key)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class CreateFeedbackView(View):
@@ -339,6 +349,7 @@ class CreateFeedbackAPI(APIView):
             return Response({"error": "Receiver not found for this feedback type."}, status=status.HTTP_400_BAD_REQUEST)
         
         print(f"Receiver determined: receiver_id={receiver_id}")
+        print(f"IMPORTANT: Storing RECEIVER ID (not name): {receiver_id}")
 
         # Generate AI-based questions or fallback to predefined ones
         questions = self._generate_questions(feedback_type)
@@ -355,6 +366,9 @@ class CreateFeedbackAPI(APIView):
                 feedback_type=feedback_type,
                 questions=questions
             )
+            
+            # Verify that the ID was stored correctly
+            print(f"VERIFICATION: Created feedback with receiver ID: {feedback.receiver}")
             
             # Return feedback data
             return Response({
@@ -538,16 +552,16 @@ class CreateFeedbackAPI(APIView):
                 "What areas should this employee improve in?"
             ],
             "Peer": [
-                "How well does this employee collaborate with teammates?",
-                "What strengths have you observed in this employee's teamwork?",
-                "How does this employee handle communication and conflict?",
-                "What improvements could help this employee work better with the team?",
-                "What contributions has this employee made to group projects?"
+                "How well does the employee collaborate with teammates?",
+                "What strengths has the employee demonstrated in teamwork?",
+                "How has the employee contributed to group projects?",
+                "What specific feedback would help the employee improve performance?",
+                "How well does the employee communicate with colleagues?"
             ],
             "Self": [
                 "What challenges have you faced in your role?",
                 "What accomplishments are you most proud of?",
-                "What areas do you think you need to improve?",
+                "What skills would you like to develop further to excel in your role?",
                 "How have you grown in your role over the past year?",
                 "What support do you need to enhance your performance?"
             ]
@@ -579,3 +593,256 @@ class ManagedEmployeesView(APIView):
         ]
         
         return Response(employee_data)
+
+class SwotAnalysisView(APIView):
+    """API to generate and store SWOT analysis using Groq."""
+
+    def get(self, request):
+        """Generate a SWOT analysis for a user based on feedback."""
+        # Get the user_id from the request
+        user_id = request.query_params.get("user_id")
+        year = request.query_params.get("year", datetime.datetime.now().year)
+        force_new = request.query_params.get("force_new", "false").lower() == "true"
+        
+        if not user_id:
+            return Response({"error": "user_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Convert user_id to string for comparison with receiver field
+        user_id_str = str(user_id)
+        print(f"VERIFICATION: Using user_id as string for comparison: {user_id_str}")
+        
+        # Check if a SWOT analysis already exists for this user and year
+        existing_swot = SwotAnalysis.objects.filter(receiver_id=user_id_str, year=year).first()
+        
+        if existing_swot and not force_new:
+            print(f"Found existing SWOT analysis for user {user_id} for year {year}")
+            return Response({
+                "id": str(existing_swot.id),
+                "receiver_id": existing_swot.receiver_id,
+                "year": existing_swot.year,
+                "summary": existing_swot.summary,
+                "strengths": existing_swot.strengths,
+                "weaknesses": existing_swot.weaknesses,
+                "opportunities": existing_swot.opportunities,
+                "threats": existing_swot.threats,
+                "created_at": existing_swot.created_at.isoformat(),
+            })
+        
+        # Collect all feedback for this user
+        feedback_data = []
+        
+        # Filter feedback entries where the receiver field matches the user_id
+        feedback_entries = Feedback.objects.filter(receiver=user_id_str, is_submitted=True)
+        
+        print(f"Found {feedback_entries.count()} feedback entries for user {user_id}")
+        print(f"VERIFICATION: Querying feedback with receiver ID (not name): {user_id_str}")
+        
+        if not feedback_entries.exists():
+            print(f"No feedback found for user {user_id}")
+            return Response({"error": "No feedback found for this user"}, status=status.HTTP_404_NOT_FOUND)
+
+        for feedback in feedback_entries:
+            # Ensure questions and answers are properly handled
+            questions = feedback.questions
+            answers = feedback.answers if feedback.answers else {}
+            
+            print(f"Feedback ID: {feedback.id}, Type: {feedback.feedback_type}")
+            print(f"VERIFICATION: Feedback receiver ID: {feedback.receiver}")
+            print(f"Questions: {questions}")
+            print(f"Answers: {answers}")
+            
+            feedback_data.append({
+                "questions": questions,
+                "answers": answers,
+                "feedback_type": feedback.feedback_type
+            })
+        
+        # Generate SWOT analysis
+        try:
+            print(f"Generating SWOT analysis for user {user_id}")
+            swot_data = self.perform_swot_analysis(feedback_data)
+            
+            # Get the user object
+            try:
+                user = AuthUser.objects.get(id=user_id)
+                
+                # Store SWOT analysis with user object
+                swot_entry = SwotAnalysis.objects.create(
+                    receiver=user,
+                    year=year,
+                    summary=swot_data.get("Summary", ""),
+                    strengths=swot_data.get("Strengths", ""),
+                    weaknesses=swot_data.get("Weaknesses", ""),
+                    opportunities=swot_data.get("Opportunities", ""),
+                    threats=swot_data.get("Threats", ""),
+                )
+                
+                receiver_id = str(user.id)
+            except AuthUser.DoesNotExist:
+                # For testing purposes, create a mock entry
+                # In production, you would want to handle this differently
+                return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+            # Return the SWOT analysis
+            return Response({
+                "id": str(swot_entry.id),
+                "receiver_id": receiver_id,
+                "year": swot_entry.year,
+                "summary": swot_entry.summary,
+                "strengths": swot_entry.strengths,
+                "weaknesses": swot_entry.weaknesses,
+                "opportunities": swot_entry.opportunities,
+                "threats": swot_entry.threats,
+                "created_at": swot_entry.created_at.isoformat(),
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            print(f"Error generating SWOT analysis: {str(e)}")
+            return Response({"error": f"Error generating SWOT analysis: {str(e)}"}, 
+                           status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def perform_swot_analysis(self, feedback_data):
+        """Generates a SWOT analysis dynamically using Groq API."""
+        try:
+            input_text = "Generate a detailed SWOT analysis based on the following employee feedback:\n\n"
+            
+            for entry in feedback_data:
+                feedback_type = entry.get("feedback_type", "Unknown")
+                input_text += f"## {feedback_type} Feedback:\n"
+                
+                questions = entry["questions"]
+                answers = entry["answers"]
+
+                # Format questions and answers properly
+                if isinstance(questions, list) and isinstance(answers, list):
+                    for q, a in zip(questions, answers):
+                        input_text += f"**Q:** {q}\n**A:** {a}\n\n"
+                elif isinstance(questions, list) and isinstance(answers, dict):
+                    for i, q in enumerate(questions):
+                        answer = answers.get(str(i), "No answer provided")
+                        input_text += f"**Q:** {q}\n**A:** {answer}\n\n"
+
+            # Use the API key directly
+            api_key = "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"
+            print("Using hardcoded API key")
+
+            # Initialize Groq client
+            client = Groq(api_key=api_key)
+
+            # Call Groq API
+            print("Calling Groq API for SWOT analysis")
+            response = client.chat.completions.create(
+                model="mixtral-8x7b-32768",
+                messages=[
+                    {"role": "system", "content": 
+                     "You are an expert HR performance analyst. Based on employee feedback, generate a detailed SWOT analysis "
+                     "(Strengths, Weaknesses, Opportunities, and Threats) for this employee. Format the response in markdown-style "
+                     "headings: '## Summary', '## Strengths', '## Weaknesses', '## Opportunities', and '## Threats'."},
+                    {"role": "user", "content": input_text}
+                ]
+            )
+
+            # Extract AI response
+            swot_text = response.choices[0].message.content
+            return self.parse_swot_response(swot_text)
+
+        except Exception as e:
+            print(f"Error in perform_swot_analysis: {str(e)}")
+            return {
+                "Summary": f"Error generating SWOT analysis: {str(e)}",
+                "Strengths": "N/A",
+                "Weaknesses": "N/A",
+                "Opportunities": "N/A",
+                "Threats": "N/A"
+            }
+
+    def parse_swot_response(self, response_text):
+        """Parses AI-generated SWOT response into structured data."""
+        swot_data = {"Summary": "", "Strengths": "", "Weaknesses": "", "Opportunities": "", "Threats": ""}
+
+        for section in swot_data.keys():
+            pattern = rf"(?i)## {section}\n(.*?)(?=\n## |\Z)"
+            match = re.search(pattern, response_text, re.DOTALL)
+            swot_data[section] = match.group(1).strip() if match else f"No {section.lower()} identified."
+
+        return swot_data
+
+class DeleteSwotAnalysisView(APIView):
+    """API view to delete a SWOT analysis for a user."""
+    
+    def delete(self, request):
+        """Deletes a SWOT analysis for a user."""
+        user_id = request.GET.get('user_id')
+        year = request.GET.get('year', datetime.datetime.now().year)
+        
+        print(f"Delete SWOT Analysis requested for user_id: {user_id}, year: {year}")
+        
+        if not user_id:
+            return Response({"error": "User ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            # Convert year to integer
+            year = int(year)
+        except ValueError:
+            return Response({"error": "Year must be a valid integer"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            # Get the user object
+            try:
+                user = AuthUser.objects.get(id=user_id)
+                print(f"Found user: {user.name} (ID: {user.id})")
+            except AuthUser.DoesNotExist:
+                print(f"User with ID {user_id} not found")
+                return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+                
+            # Delete all SWOT analyses for this user and year
+            deleted_count, _ = SwotAnalysis.objects.filter(receiver=user, year=year).delete()
+            
+            if deleted_count > 0:
+                print(f"Deleted {deleted_count} SWOT analyses for user {user.id} and year {year}")
+                return Response({"message": f"Successfully deleted {deleted_count} SWOT analyses"}, status=status.HTTP_200_OK)
+            else:
+                print(f"No SWOT analyses found for user {user.id} and year {year}")
+                return Response({"message": "No SWOT analyses found to delete"}, status=status.HTTP_404_NOT_FOUND)
+                
+        except Exception as e:
+            print(f"Error deleting SWOT analysis: {str(e)}")
+            return Response({"error": f"Error deleting SWOT analysis: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class SwotAnalysisAvailabilityView(APIView):
+    """API view to check SWOT analysis availability for a specific employee."""
+
+    def get(self, request):
+        """Retrieves all SWOT analysis data for a specific employee."""
+        user_id = request.query_params.get('user_id')
+
+        if not user_id:
+            return Response({"error": "user_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Fetch all SWOT analyses for the specific user
+            swot_analyses = SwotAnalysis.objects.filter(receiver_id=user_id)
+
+            if not swot_analyses.exists():
+                return Response({"message": "No SWOT analyses found for this user"}, status=status.HTTP_404_NOT_FOUND)
+
+            # Prepare the response data
+            response_data = [
+                {
+                    "id": str(swot.id),
+                    "receiver_id": swot.receiver_id,
+                    "year": swot.year,
+                    "summary": swot.summary,
+                    "strengths": swot.strengths,
+                    "weaknesses": swot.weaknesses,
+                    "opportunities": swot.opportunities,
+                    "threats": swot.threats,
+                    "created_at": swot.created_at.isoformat(),
+                }
+                for swot in swot_analyses
+            ]
+
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": f"Error retrieving SWOT analyses: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

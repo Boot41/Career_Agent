@@ -24,7 +24,7 @@ class Feedback(models.Model):
     
     id = models.AutoField(primary_key=True)
     giver = models.CharField(max_length=100)
-    receiver = models.CharField(max_length=100)
+    receiver = models.CharField(max_length=100)  # This stores the user ID, not the name
     organization_id = models.CharField(max_length=100)
     feedback_type = models.CharField(max_length=20, choices=FEEDBACK_TYPE_CHOICES)
     questions = models.JSONField()
@@ -44,7 +44,7 @@ class Feedback(models.Model):
     def create_feedback(cls, giver, receiver, organization_id, feedback_type, questions):
         # Ensure all IDs are strings
         giver = str(giver)
-        receiver = str(receiver)
+        receiver = str(receiver)  # Make sure this is the ID, not the name
         organization_id = str(organization_id)
         
         feedback = cls(giver=giver, receiver=receiver, organization_id=organization_id,
@@ -54,6 +54,7 @@ class Feedback(models.Model):
 
     @classmethod
     def get_pending_feedback(cls, receiver):
+        # receiver should be the ID
         return cls.objects.filter(receiver=receiver, answers__isnull=True)
 
     @classmethod
@@ -63,3 +64,19 @@ class Feedback(models.Model):
         feedback.is_submitted = True
         feedback.save()
         return feedback
+
+
+class SwotAnalysis(models.Model):
+    """Model to store SWOT Analysis results for employees."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    receiver = models.ForeignKey(AuthUser, on_delete=models.CASCADE)  # The employee being analyzed
+    year = models.IntegerField()
+    summary = models.TextField()
+    strengths = models.TextField()
+    weaknesses = models.TextField()
+    opportunities = models.TextField()
+    threats = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"SWOT Analysis for {self.receiver.username} ({self.year})"
