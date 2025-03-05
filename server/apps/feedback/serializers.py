@@ -8,7 +8,7 @@ class FeedbackSerializer(serializers.ModelSerializer):
 
 class FeedbackPromptSerializer(serializers.Serializer):
     role = serializers.CharField(max_length=255)
-    feedback_type = serializers.CharField(max_length=255)
+    feedback_type = serializers.CharField(max_length=255, required=False)
     feedback_receiver = serializers.ChoiceField(
         choices=["Manager", "Peer", "Employee", "Self"]
     )

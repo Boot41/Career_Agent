@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Frontend Integration</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Test Frontend Integration with GenerateFeedbackView</h1>
+    
+    <div>
+        <h2>Generate Feedback Questions</h2>
+        <div>
+            <label for="role">Role:</label>
+            <input type="text" id="role" placeholder="e.g., Software Engineer">
+        </div>
+        <div>
+            <label for="feedbackReceiver">Feedback Receiver:</label>
+            <select id="feedbackReceiver">
+                <option value="Manager">Manager</option>
+                <option value="Peer">Peer</option>
+                <option value="Self">Self</option>
+            </select>
+        </div>
+        <button id="generateBtn">Generate Questions</button>
+    </div>
+    
+    <div id="loading" style="display: none;">
+        <p>Generating questions...</p>
+    </div>
+    
+    <div id="results" style="display: none;">
+        <h3>Generated Questions:</h3>
+        <ol id="questionsList"></ol>
+    </div>
+    
+    <script>
+        document.getElementById('generateBtn').addEventListener('click', async () => {
+            const role = document.getElementById('role').value;
+            const feedbackReceiver = document.getElementById('feedbackReceiver').value;
+            
+            if (!role) {
+                alert('Please enter a role');
+                return;
+            }
+            
+            // Show loading indicator
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            
+            try {
+                // Call backend to generate feedback questions using the AI-powered endpoint
+                const response = await axios.post("http://localhost:8001/feedback/generate-feedback/", {
+                    role: role,
+                    feedback_receiver: feedbackReceiver
+                });
+                
+                if (response.status === 200) {
+                    // Display the generated questions
+                    const questionsList = document.getElementById('questionsList');
+                    questionsList.innerHTML = '';
+                    
+                    response.data.questions.forEach(question => {
+                        const li = document.createElement('li');
+                        li.textContent = question;
+                        questionsList.appendChild(li);
+                    });
+                    
+                    // Show results
+                    document.getElementById('results').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error generating questions:', error);
+                alert('Error generating questions. Please try again.');
+            } finally {
+                // Hide loading indicator
+                document.getElementById('loading').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

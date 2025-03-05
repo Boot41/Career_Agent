@@ -165,10 +165,9 @@ const HRDashboard = () => {
     setGeneratedQuestions([]);
     
     try {
-      // Call backend to generate feedback questions using the AI API
-      const response = await axios.post("http://localhost:8001/feedback/generate-questions/", {
+      // Call backend to generate feedback questions using the AI-powered endpoint
+      const response = await axios.post("http://localhost:8001/feedback/generate-feedback/", {
         role: selectedRole || params.role, // Use selectedRole if available, otherwise use params.role
-        feedback_type: params.feedbackType,
         feedback_receiver: params.feedbackReceiver
       });
 

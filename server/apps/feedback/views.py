@@ -19,9 +19,12 @@ import re
 import dotenv
 import re
 
+# Load environment variables from .env file
+dotenv.load_dotenv()
+
 # openai is used with Groq API key for compatibility
 openai.api_key = os.environ.get('GROQ_API_KEY')
-print(openai.api_key)
+print(f"Loaded GROQ_API_KEY: {openai.api_key[:5]}..." if openai.api_key else "GROQ_API_KEY not found")
 
 @method_decorator(csrf_exempt, name='dispatch')
 class CreateFeedbackView(View):
@@ -193,12 +196,41 @@ class GenerateFeedbackView(APIView):
         prompt = self._generate_prompt(role, feedback_receiver)
 
         try:
-            # Fetch AI-generated questions
-            questions = self._fetch_questions_from_groq(prompt) or self._fallback_questions(role, feedback_receiver)
+            # Try to use Groq API with direct key
+            try:
+                questions = self._fetch_questions_from_groq_direct(prompt)
+                print("Successfully generated questions using Groq API")
+            except Exception as api_error:
+                print(f"Error using Groq API: {str(api_error)}")
+                # Fall back to predefined questions if API fails
+                questions = self._fallback_questions(role, feedback_receiver)
+                print("Using fallback questions")
+                
             return Response({"questions": questions}, status=status.HTTP_200_OK)
 
         except Exception as e:
+            print(f"Error in GenerateFeedbackView: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return Response({"error": f"API request failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+    def _fetch_questions_from_groq_direct(self, prompt):
+        """Fetches feedback questions from Groq API using direct key."""
+        # Hardcoded API key - this should be replaced with a proper environment variable in production
+        api_key = "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"
+        print("Using hardcoded API key for Groq")
+        
+        # Initialize Groq client
+        client = Groq(api_key=api_key)
+        
+        # Call Groq API
+        response = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model="llama3-70b-8192"
+        )
+        
+        # Extract questions from response
+        return [q.strip() for q in response.choices[0].message.content.strip().split("\n") if q.strip().endswith("?")][:5]
 
     def _generate_prompt(self, role, feedback_receiver):
         """Generates a structured AI prompt for feedback question generation."""
@@ -220,22 +252,8 @@ Important guidelines:
 Return exactly 5 questions as a numbered list.
 """
 
-    def _fetch_questions_from_groq(self, prompt):
-        """Fetches feedback questions from Groq API."""
-        groq_api_key = os.environ.get('GROQ_API_KEY')
-        if not groq_api_key:
-            raise ValueError("Groq API key is missing.")
-
-        client = Groq(api_key=groq_api_key)
-        response = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
-            model="llama3-70b-8192"
-        )
-
-        return [q.strip() for q in response.choices[0].message.content.strip().split("\n") if q.strip().endswith("?")][:5]
-
     def _fallback_questions(self, role, feedback_receiver):
-        """Returns predefined fallback questions if AI response is invalid."""
+        """Returns predefined fallback questions if AI fails."""
         fallback = {
             'Manager': [
                 f"What are the key strengths demonstrated by the employee in the {role} position?",
@@ -531,7 +549,7 @@ class CreateFeedbackAPI(APIView):
         """Calls Groq API to generate questions dynamically."""
         prompt = f"Generate 5 structured feedback questions for a {feedback_type} review."
         try:
-            client = Groq(api_key=os.environ["GROQ_API_KEY"])
+            client = Groq(api_key=openai.api_key)
             response = client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
                 model="llama3-70b-8192"
@@ -723,8 +741,8 @@ class SwotAnalysisView(APIView):
                         input_text += f"**Q:** {q}\n**A:** {answer}\n\n"
 
             # Use the API key directly
-            api_key = "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"
-            print("Using hardcoded API key")
+            api_key = openai.api_key
+            print("Using loaded API key")
 
             # Initialize Groq client
             client = Groq(api_key=api_key)
