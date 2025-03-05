@@ -47,6 +47,9 @@ function Signin() {
           return;
         }
 
+        // Clear existing user data in localStorage
+        localStorage.clear();
+
         // Store FULL user data in localStorage
         localStorage.setItem('userData', JSON.stringify({
           id: userData.id,
@@ -54,7 +57,7 @@ function Signin() {
           role: userData.role,
           name: userData.name,
           email: userData.email,
-          organization_id: userData.organization_id  // Ensure this is included
+          organization_id: userData.organization_id
         }));
 
         // Navigate based on user role

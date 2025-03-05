@@ -2,6 +2,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from apps.authentication.models import AuthUser
+from apps.organizations.models import Organization  # Correct import for Organization model
 import uuid
 
 @csrf_exempt
@@ -14,7 +15,7 @@ def get_organization_hierarchy(request):
     - organization_id: UUID of the organization
     
     Returns:
-    - List of managers with their assigned employees
+    - List of managers with their assigned employees and organization details
     """
     # Extract organization ID from query parameters
     organization_id = request.GET.get('organization_id')
@@ -29,6 +30,13 @@ def get_organization_hierarchy(request):
         }, status=400)
     
     try:
+        # Fetch organization details
+        organization = Organization.objects.get(id=organization_id)  # Fetch organization by ID
+        organization_details = {
+            "name": organization.name,
+            # "address": organization.address  # Assuming address field exists
+        }
+
         # Fetch all managers in the organization
         managers = list(AuthUser.objects.filter(
             organization_id=organization_id, 
@@ -60,9 +68,11 @@ def get_organization_hierarchy(request):
         return JsonResponse({
             "success": True,
             "managers": managers_with_teams,
-            "unassigned_employees": unassigned_employees
+            "unassigned_employees": unassigned_employees,
+            "organization_name": organization_details['name'],
+            "organization_details": organization_details
         })
-    
+        
     except Exception as e:
         return JsonResponse({
             "success": False,

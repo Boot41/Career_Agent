@@ -1,35 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
-import { 
-  MessageSquareText, 
-  Star, 
-  BarChart3, 
-  FileText, 
-  Award 
-} from 'lucide-react';
+import { MessageSquareText, FileText } from 'lucide-react';
 
-// Mock employee performance data
-const performanceData = {
-  overallRating: 4.3,
-  recentReviews: [
-    {
-      id: 1,
-      title: "Q1 2025 Performance Review",
-      date: "2025-03-15",
-      reviewerName: "Alex Thompson",
-      status: "Completed"
-    }
-  ],
-  skillProgress: [
-    { skill: "React Development", progress: 85 },
-    { skill: "Backend Integration", progress: 70 },
-    { skill: "Communication", progress: 90 }
-  ]
-};
-
-// Mock feedback requests
-const feedbackRequests = [
+// Dummy feedback requests
+const dummyFeedbackRequests = [
   {
     id: 1,
     title: "Quarterly Self-Reflection",
@@ -40,25 +15,71 @@ const feedbackRequests = [
       "What challenges did you face, and how did you overcome them?",
       "What skills would you like to develop further?",
       "How do you see yourself contributing to the team's goals in the next quarter?"
-    ]
+    ],
+    reviewed: false
+  }
+];
+
+// Dummy submitted feedback
+const dummySubmittedFeedback = [
+  {
+    id: 1,
+    title: "Q4 2024 Self-Reflection",
+    submitted_on: "2025-01-10",
+    status: "Reviewed"
+  },
+  {
+    id: 2,
+    title: "Mid-Year Performance Review",
+    submitted_on: "2024-06-15",
+    status: "Pending"
   }
 ];
 
 const EmployeeDashboard = () => {
+  const [userData, setUserData] = useState(null);
+  const [feedbackRequests, setFeedbackRequests] = useState(dummyFeedbackRequests);
+  const [submittedFeedback, setSubmittedFeedback] = useState(dummySubmittedFeedback);
   const [selfReflection, setSelfReflection] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  const [showQuestions, setShowQuestions] = useState(null); // Track which feedback questions to show
 
-  const handleResponseChange = (questionId, value) => {
+  useEffect(() => {
+    const storedUserData = localStorage.getItem('userData');
+    if (storedUserData) {
+      setUserData(JSON.parse(storedUserData));
+    }
+  }, []);
+
+  const handleResponseChange = (requestId, questionId, value) => {
     setSelfReflection(prev => ({
       ...prev,
-      [questionId]: value
+      [requestId]: {
+        ...(prev[requestId] || {}),
+        [questionId]: value
+      }
     }));
   };
 
-  const handleSubmit = () => {
-    // In a real app, you would submit the self-reflection to the backend
-    console.log('Self Reflection:', selfReflection);
+  const handleSubmit = (requestId) => {
     setSubmitted(true);
+    setFeedbackRequests(prev => 
+      prev.filter(request => request.id !== requestId)
+    );
+    
+    const submittedRequest = dummyFeedbackRequests.find(req => req.id === requestId);
+    if (submittedRequest) {
+      const newSubmission = {
+        id: Date.now(),
+        title: submittedRequest.title,
+        submitted_on: new Date().toISOString().split('T')[0],
+        status: "Reviewed"
+      };
+      
+      setSubmittedFeedback(prev => [...prev, newSubmission]);
+    }
+    
+    setSelfReflection({});
   };
 
   return (
@@ -66,124 +87,112 @@ const EmployeeDashboard = () => {
       <Sidebar userType="employee" />
       
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header title="Employee Dashboard" userName="Emily Brown (Software Engineer)" />
+        <Header 
+          title="Employee Dashboard" 
+          userName={userData ? `${userData.name} (${userData.role})` : 'Loading...'} 
+        />
         
         <main className="flex-1 overflow-y-auto p-6">
           <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">Welcome, Emily</h2>
-            <p className="text-gray-600">
-              Stay updated with your performance, feedback, and professional growth.
-            </p>
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">
+              Welcome, {userData ? userData.name : 'Loading...'}
+            </h2>
+            <p className="text-gray-600">Manage your feedback and professional growth.</p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow-md p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
-                  <Star size={20} />
-                </div>
-                <h3 className="font-medium text-gray-800">Performance Rating</h3>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{performanceData.overallRating}/5</p>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow-md p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-600">
-                  <MessageSquareText size={20} />
-                </div>
-                <h3 className="font-medium text-gray-800">Pending Feedback</h3>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{feedbackRequests.length}</p>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow-md p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600">
-                  <Award size={20} />
-                </div>
-                <h3 className="font-medium text-gray-800">Recent Reviews</h3>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{performanceData.recentReviews.length}</p>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h3 className="text-lg font-medium text-gray-800 mb-4">Skill Progress</h3>
-            
-            {performanceData.skillProgress.map((skill, index) => (
-              <div key={index} className="mb-4">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-700">{skill.skill}</span>
-                  <span className="text-sm font-medium text-gray-700">{skill.progress}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div 
-                    className="bg-indigo-600 h-2.5 rounded-full" 
-                    style={{ width: `${skill.progress}%` }}
-                  ></div>
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-medium text-gray-800 mb-4">
-              Pending Feedback Requests
-            </h3>
-            
-            {submitted ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-green-600 mx-auto mb-4">
-                  <MessageSquareText size={32} />
-                </div>
-                <h4 className="text-xl font-medium text-gray-800 mb-2">Self-Reflection Submitted Successfully!</h4>
-                <p className="text-gray-600 max-w-md mx-auto">
-                  Thank you for completing your self-reflection. Your insights will be reviewed by your manager.
-                </p>
-              </div>
-            ) : (
-              feedbackRequests.map(request => (
+
+          {/* Show Pending Feedback if Available */}
+          {feedbackRequests.length > 0 ? (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h3 className="text-lg font-medium text-gray-800 mb-4">
+                Pending Feedback Requests
+              </h3>
+              
+              {feedbackRequests.map(request => (
                 <div key={request.id} className="border border-gray-200 rounded-lg p-5 mb-4">
                   <div className="flex justify-between items-center mb-4">
                     <div>
                       <h4 className="font-medium text-gray-800">{request.title}</h4>
                       <p className="text-sm text-gray-500">{request.description}</p>
                     </div>
-                    <span className="text-sm text-gray-500">Due: {request.deadline}</span>
+                    <span className="text-sm text-gray-500">
+                      Due: {new Date(request.deadline).toLocaleDateString()}
+                    </span>
                   </div>
-                  
-                  <div className="space-y-6 mb-6">
-                    {request.questions.map((question, index) => {
-                      const questionId = `${request.id}-${index}`;
-                      return (
-                        <div key={index} className="border-b border-gray-200 pb-6">
-                          <p className="text-gray-800 mb-3">{index + 1}. {question}</p>
-                          
+
+                  <div className="flex justify-end">
+                    <button
+                      onClick={() => setShowQuestions(request.id)}
+                      className={`flex items-center gap-2 px-4 py-2 ${request.reviewed ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 text-white'} rounded-lg hover:bg-indigo-700`}
+                      disabled={request.reviewed}
+                    >
+                      <FileText size={18} />
+                      <span>{request.reviewed ? 'Reviewed' : 'View Questions'}</span>
+                    </button>
+                  </div>
+
+                  {/* Show questions if this request is selected */}
+                  {showQuestions === request.id && (
+                    <div className="mt-4">
+                      {request.questions.map((question, index) => (
+                        <div key={index} className="border-b border-gray-200 pb-2 mb-2">
+                          <p className="text-gray-800 mb-1">{index + 1}. {question}</p>
                           <textarea
-                            value={selfReflection[questionId] || ''}
-                            onChange={(e) => handleResponseChange(questionId, e.target.value)}
+                            value={
+                              (selfReflection[request.id] && 
+                               selfReflection[request.id][index]) || 
+                              ''
+                            }
+                            onChange={(e) => 
+                              handleResponseChange(
+                                request.id,
+                                index,
+                                e.target.value
+                              )
+                            }
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[100px]"
                             placeholder="Share your thoughts..."
                           />
                         </div>
-                      );
-                    })}
-                  </div>
-                  
-                  <div className="flex justify-end">
-                    <button
-                      onClick={handleSubmit}
-                      className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                    >
-                      <FileText size={18} />
-                      <span>Submit Self-Reflection</span>
-                    </button>
+                      ))}
+                      <button
+                        onClick={() => handleSubmit(request.id)}
+                        className="mt-2 flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                      >
+                        <FileText size={18} />
+                        <span>Submit Feedback</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-600">No pending feedback requests found.</p>
+          )}
+
+          {/* Show Submitted Feedback */}
+          {submittedFeedback.length > 0 ? (
+            <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+              <h3 className="text-lg font-medium text-gray-800 mb-4">
+                Submitted Feedback
+              </h3>
+              {submittedFeedback.map(submission => (
+                <div key={submission.id} className="border border-gray-200 rounded-lg p-5 mb-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <div>
+                      <h4 className="font-medium text-gray-800">{submission.title}</h4>
+                      <p className="text-sm text-gray-500">Submitted on: {submission.submitted_on}</p>
+                    </div>
+                    <span className="text-sm text-gray-500">
+                      Status: {submission.status}
+                    </span>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-600 mt-6">No submitted feedback found.</p>
+          )}
         </main>
       </div>
     </div>

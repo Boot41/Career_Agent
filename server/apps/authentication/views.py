@@ -58,7 +58,8 @@ def login(request):
                     "id": str(user.id),
                     "username": user.username,
                     "role": user.role,
-                    "organization_id": str(user.organization_id) if user.organization_id else None
+                    "organization_id": str(user.organization_id) if user.organization_id else None,
+                    "name": user.name
                 }
             })
         else:

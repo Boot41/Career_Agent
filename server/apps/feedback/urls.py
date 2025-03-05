@@ -1,6 +1,8 @@
 from django.urls import path
-from .views import GenerateFeedbackView
+from .views import CreateFeedbackView, PendingFeedbackView, SubmitAnswersView
 
 urlpatterns = [
-    path("generate-feedback/", GenerateFeedbackView.as_view(), name="generate_feedback"),
+    path('create-feedback/', CreateFeedbackView.as_view(), name='create_feedback'),
+    path('pending-feedback/', PendingFeedbackView.as_view(), name='pending_feedback'),
+    path('submit-answers/', SubmitAnswersView.as_view(), name='submit_answers'),
 ]

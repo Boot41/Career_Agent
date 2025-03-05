@@ -22,7 +22,9 @@ const HRDashboard = () => {
   // Organization Hierarchy State
   const [organizationHierarchy, setOrganizationHierarchy] = useState({
     managers: [],
-    unassignedEmployees: []
+    unassignedEmployees: [],
+    organization_name: '',
+    organization_details: {}
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -56,75 +58,47 @@ const HRDashboard = () => {
   const [generatedQuestions, setGeneratedQuestions] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Fetch Organization Hierarchy
+  // Fetch Organization Hierarchy and User Data
   useEffect(() => {
-    // Retrieve user data from localStorage
     const storedUserData = localStorage.getItem('userData');
-    
     if (storedUserData) {
+      setUserData(JSON.parse(storedUserData));
+    }
+
+    const fetchOrganizationHierarchy = async () => {
       try {
-        const parsedUserData = JSON.parse(storedUserData);
-        setUserData(parsedUserData);
+        const storedUserData = localStorage.getItem('userData');
+        if (storedUserData) {
+          const parsedUserData = JSON.parse(storedUserData);
+          setUserData(parsedUserData);
 
-        const fetchOrganizationHierarchy = async () => {
-          try {
-            // Validate organization_id
-            if (!parsedUserData.organization_id) {
-              throw new Error('No organization ID found in user data');
-            }
+          // Fetch organization hierarchy and details
+          const response = await axios.get('/org/hierarchy/', {
+            params: { organization_id: parsedUserData.organization_id }
+          });
 
-            console.log('Fetching organization hierarchy with ID:', parsedUserData.organization_id);
-
-            const response = await axios.get('/org/hierarchy/', {
-              params: { organization_id: parsedUserData.organization_id }
+          if (response.data && response.data.success) {
+            setOrganizationHierarchy({
+              managers: response.data.managers || [],
+              unassignedEmployees: response.data.unassigned_employees || [],
+              organization_name: response.data.organization_name || '',
+              organization_details: response.data.organization_details || {}
             });
-
-            console.log('Full API Response:', response);
-
-            // Check if response contains expected data
-            if (response.data && response.data.success) {
-              setOrganizationHierarchy({
-                managers: response.data.managers || [],
-                unassignedEmployees: response.data.unassigned_employees || []
-              });
-            } else {
-              throw new Error('Invalid response format');
-            }
-          } catch (err) {
-            console.error('Detailed Error Fetching Organization Hierarchy:', {
-              message: err.message,
-              response: err.response ? err.response.data : 'No response',
-              config: err.config,
-              code: err.code
-            });
-            
-            // More specific error handling
-            if (err.response) {
-              // The request was made and the server responded with a status code
-              // that falls out of the range of 2xx
-              setError(`Server Error: ${err.response.status} - ${err.response.data.message || 'Unknown error'}`);
-            } else if (err.request) {
-              // The request was made but no response was received
-              setError('No response received from server. Check network connection.');
-            } else {
-              // Something happened in setting up the request that triggered an Error
-              setError(`Request Setup Error: ${err.message}`);
-            }
-          } finally {
-            setIsLoading(false);
+          } else {
+            throw new Error('Invalid response format');
           }
-        };
-
-        fetchOrganizationHierarchy();
-      } catch (parseError) {
-        console.error('Error parsing user data:', parseError);
-        setError('Invalid user data stored');
+        } else {
+          setError('No user data found. Please log in again.');
+        }
+      } catch (err) {
+        console.error('Error fetching organization hierarchy:', err);
+        setError('Error fetching organization hierarchy.');
+      } finally {
         setIsLoading(false);
       }
-    } else {
-      setError('No user data found. Please log in again.');
-      setIsLoading(false);
-    }
+    };
+
+    fetchOrganizationHierarchy();
   }, []);
 
   const handleEmployeeSelect = (employee) => {
@@ -196,6 +170,10 @@ const HRDashboard = () => {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleAcceptQuestions = () => {
+    console.log('Questions accepted:', generatedQuestions);
   };
 
   // Organization Hierarchy Rendering
@@ -364,9 +342,9 @@ const HRDashboard = () => {
           {/* Generated Questions */}
           {generatedQuestions.length > 0 && (
             <div className="mt-6 bg-white shadow-md rounded-lg p-6">
-              <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                Generated Feedback Questions
-              </h3>
+              <div className="flex justify-between">
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">Generated Feedback Questions</h3>
+              </div>
               <ul className="space-y-3">
                 {generatedQuestions.map((question, index) => (
                   <li 
@@ -377,6 +355,15 @@ const HRDashboard = () => {
                   </li>
                 ))}
               </ul>
+              <div className="flex justify-end mt-4">
+                <button 
+                  onClick={handleAcceptQuestions}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                >
+                  <CheckCircle size={18} />
+                  Accept Questions
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -384,158 +371,161 @@ const HRDashboard = () => {
     );
   };
 
-  const headerUserName = userData ? userData.name : 'HR User';
+  const headerUserName = userData ? `${userData.name} (${userData.role})` : 'Loading...';
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-gray-50">
       <Sidebar userType="hr" />
-      
-      <div className="flex-grow flex flex-col">
+      <div className="flex-1 flex flex-col overflow-hidden">
         <Header 
-          title="HR Dashboard" 
+          title={userData ? organizationHierarchy.organization_name : 'Loading...'} 
           userName={headerUserName} 
         />
+        <main className="flex-1 overflow-y-auto p-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">
+            Welcome, {userData ? userData.name : 'Loading...'}
+          </h2>
+          <div className="flex flex-1 overflow-hidden">
+            {/* Main Content Area */}
+            <div className="flex-grow bg-gray-50 p-6 overflow-y-auto">
+              {/* Tabs */}
+              <div className="mb-6 border-b border-gray-200">
+                <nav className="-mb-px flex space-x-8">
+                  <button
+                    onClick={() => setActiveTab('overview')}
+                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'overview' 
+                        ? 'border-indigo-500 text-indigo-600' 
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Overview
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('hierarchy')}
+                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'hierarchy' 
+                        ? 'border-indigo-500 text-indigo-600' 
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Organization Hierarchy
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('feedback')}
+                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'feedback' 
+                        ? 'border-indigo-500 text-indigo-600' 
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Feedback Generation
+                  </button>
+                </nav>
+              </div>
 
-        <div className="flex flex-1 overflow-hidden">
-          {/* Main Content Area */}
-          <div className="flex-grow bg-gray-50 p-6 overflow-y-auto">
-            {/* Tabs */}
-            <div className="mb-6 border-b border-gray-200">
-              <nav className="-mb-px flex space-x-8">
-                <button
-                  onClick={() => setActiveTab('overview')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'overview' 
-                      ? 'border-indigo-500 text-indigo-600' 
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Overview
-                </button>
-                <button
-                  onClick={() => setActiveTab('hierarchy')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'hierarchy' 
-                      ? 'border-indigo-500 text-indigo-600' 
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Organization Hierarchy
-                </button>
-                <button
-                  onClick={() => setActiveTab('feedback')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'feedback' 
-                      ? 'border-indigo-500 text-indigo-600' 
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Feedback Generation
-                </button>
-              </nav>
-            </div>
-
-            {/* Content based on active tab */}
-            {activeTab === 'overview' ? (
-              selectedEmployee ? (
-                <div className="bg-white shadow-md rounded-lg p-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-2xl font-bold text-gray-800 flex items-center">
-                      <Users className="mr-3 text-indigo-600" /> 
-                      Employee Profile
-                    </h2>
-                  </div>
-                  
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Personal Information</h3>
-                      <div className="space-y-2">
-                        <p><strong>Name:</strong> {selectedEmployee.name}</p>
-                        <p><strong>Department:</strong> {selectedEmployee.department}</p>
-                        <p><strong>Current Role:</strong> {selectedEmployee.role}</p>
-                        <p><strong>Email:</strong> {selectedEmployee.email}</p>
-                      </div>
+              {/* Content based on active tab */}
+              {activeTab === 'overview' ? (
+                selectedEmployee ? (
+                  <div className="bg-white shadow-md rounded-lg p-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+                        <Users className="mr-3 text-indigo-600" /> 
+                        Employee Profile
+                      </h2>
                     </div>
                     
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-700 mb-2">Performance Snapshot</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-indigo-50 p-3 rounded-md text-center">
-                          <TrendingUp className="mx-auto mb-2 text-indigo-600" />
-                          <div className="font-bold text-indigo-700">85%</div>
-                          <div className="text-xs text-gray-600">Feedback Completion</div>
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-700 mb-2">Personal Information</h3>
+                        <div className="space-y-2">
+                          <p><strong>Name:</strong> {selectedEmployee.name}</p>
+                          <p><strong>Department:</strong> {selectedEmployee.department}</p>
+                          <p><strong>Current Role:</strong> {selectedEmployee.role}</p>
+                          <p><strong>Email:</strong> {selectedEmployee.email}</p>
                         </div>
-                        <div className="bg-green-50 p-3 rounded-md text-center">
-                          <Star className="mx-auto mb-2 text-green-600" />
-                          <div className="font-bold text-green-700">4.2/5</div>
-                          <div className="text-xs text-gray-600">Performance Rating</div>
+                      </div>
+                      
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-700 mb-2">Performance Snapshot</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-indigo-50 p-3 rounded-md text-center">
+                            <TrendingUp className="mx-auto mb-2 text-indigo-600" />
+                            <div className="font-bold text-indigo-700">85%</div>
+                            <div className="text-xs text-gray-600">Feedback Completion</div>
+                          </div>
+                          <div className="bg-green-50 p-3 rounded-md text-center">
+                            <Star className="mx-auto mb-2 text-green-600" />
+                            <div className="font-bold text-green-700">4.2/5</div>
+                            <div className="text-xs text-gray-600">Performance Rating</div>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <div className="bg-white shadow-md rounded-lg p-6">
-                  <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-                    <Users className="mr-3 text-indigo-600" /> 
-                    Employee Overview
-                  </h2>
-                  <div className="grid md:grid-cols-3 gap-6">
-                    <div className="bg-indigo-50 p-4 rounded-md">
-                      <Users className="text-indigo-600 mb-2" />
-                      <div className="font-bold text-xl text-indigo-800">{employees.length}</div>
-                      <div className="text-sm text-gray-600">Total Employees</div>
-                    </div>
-                    <div className="bg-green-50 p-4 rounded-md">
-                      <UserPlus className="text-green-600 mb-2" />
-                      <div className="font-bold text-xl text-green-800">{pendingInvitations.length}</div>
-                      <div className="text-sm text-gray-600">Pending Invitations</div>
-                    </div>
-                    <div className="bg-yellow-50 p-4 rounded-md">
-                      <MessageSquareText className="text-yellow-600 mb-2" />
-                      <div className="font-bold text-xl text-yellow-800">42</div>
-                      <div className="text-sm text-gray-600">Feedback Requests</div>
+                ) : (
+                  <div className="bg-white shadow-md rounded-lg p-6">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                      <Users className="mr-3 text-indigo-600" /> 
+                      Employee Overview
+                    </h2>
+                    <div className="grid md:grid-cols-3 gap-6">
+                      <div className="bg-indigo-50 p-4 rounded-md">
+                        <Users className="text-indigo-600 mb-2" />
+                        <div className="font-bold text-xl text-indigo-800">{employees.length}</div>
+                        <div className="text-sm text-gray-600">Total Employees</div>
+                      </div>
+                      <div className="bg-green-50 p-4 rounded-md">
+                        <UserPlus className="text-green-600 mb-2" />
+                        <div className="font-bold text-xl text-green-800">{pendingInvitations.length}</div>
+                        <div className="text-sm text-gray-600">Pending Invitations</div>
+                      </div>
+                      <div className="bg-yellow-50 p-4 rounded-md">
+                        <MessageSquareText className="text-yellow-600 mb-2" />
+                        <div className="font-bold text-xl text-yellow-800">42</div>
+                        <div className="text-sm text-gray-600">Feedback Requests</div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )
-            ) : activeTab === 'hierarchy' ? (
-              isLoading ? (
-                <div className="flex justify-center items-center h-full">
-                  <Loader2 className="animate-spin text-indigo-600" size={48} />
-                </div>
-              ) : error ? (
-                <div className="bg-red-50 p-6 rounded-lg text-red-700 space-y-4">
-                  <h2 className="text-2xl font-bold flex items-center">
-                    <CheckCircle className="mr-3 text-red-500" /> 
-                    Error Fetching Organization Data
-                  </h2>
-                  <p className="text-lg">{error}</p>
-                  <div className="bg-red-100 p-4 rounded-md">
-                    <h3 className="font-semibold mb-2">Troubleshooting Tips:</h3>
-                    <ul className="list-disc list-inside">
-                      <li>Verify your network connection</li>
-                      <li>Check if you are logged in correctly</li>
-                      <li>Ensure your organization is properly configured</li>
-                      <li>Contact system administrator if problem persists</li>
-                    </ul>
+                )
+              ) : activeTab === 'hierarchy' ? (
+                isLoading ? (
+                  <div className="flex justify-center items-center h-full">
+                    <Loader2 className="animate-spin text-indigo-600" size={48} />
                   </div>
-                </div>
+                ) : error ? (
+                  <div className="bg-red-50 p-6 rounded-lg text-red-700 space-y-4">
+                    <h2 className="text-2xl font-bold flex items-center">
+                      <CheckCircle className="mr-3 text-red-500" /> 
+                      Error Fetching Organization Data
+                    </h2>
+                    <p className="text-lg">{error}</p>
+                    <div className="bg-red-100 p-4 rounded-md">
+                      <h3 className="font-semibold mb-2">Troubleshooting Tips:</h3>
+                      <ul className="list-disc list-inside">
+                        <li>Verify your network connection</li>
+                        <li>Check if you are logged in correctly</li>
+                        <li>Ensure your organization is properly configured</li>
+                        <li>Contact system administrator if problem persists</li>
+                      </ul>
+                    </div>
+                  </div>
+                ) : (
+                  renderOrganizationHierarchy()
+                )
               ) : (
-                renderOrganizationHierarchy()
-              )
-            ) : (
-              renderFeedbackGeneration()
-            )}
-          </div>
+                renderFeedbackGeneration()
+              )}
+            </div>
 
-          {/* Right Sidebar */}
-          <HRRightSidebar 
-            onEmployeeSelect={handleEmployeeSelect} 
-            onInviteEmployee={handleInviteEmployee}
-            organizationHierarchy={organizationHierarchy}
-          />
-        </div>
+            {/* Right Sidebar */}
+            <HRRightSidebar 
+              onEmployeeSelect={handleEmployeeSelect} 
+              onInviteEmployee={handleInviteEmployee}
+              organizationHierarchy={organizationHierarchy}
+            />
+          </div>
+        </main>
       </div>
       
       {/* Invite Employee Modal */}
