@@ -8,13 +8,13 @@ import { Loader2 } from "lucide-react";
 const FeedbackGenerator = ({ handleGenerateQuestions }) => {
   const [role, setRole] = useState(""); // Role input by HR
   const [feedbackType, setFeedbackType] = useState(""); // Feedback type input by HR
-  const [feedbackReceiver, setFeedbackReceiver] = useState(""); // Who is receiving the feedback
+  const [feedbackReceiver, setFeedbackReceiver] = useState("Manager"); // Who is providing the feedback (default: Manager)
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
 
   // Function to generate feedback questions
   const handleGenerateFeedback = async () => {
-    if (!role.trim() || !feedbackType.trim() || !feedbackReceiver.trim()) return;
+    if (!role.trim() || !feedbackType.trim()) return;
 
     try {
       setIsGenerating(true);
@@ -49,8 +49,8 @@ const FeedbackGenerator = ({ handleGenerateQuestions }) => {
         type="text"
         value={role}
         onChange={(e) => setRole(e.target.value)}
-        placeholder="Enter employee role (e.g., Software Engineer)"
-        className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        placeholder="Employee Role (e.g., Software Engineer)"
+        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
 
       {/* Feedback Type Input */}
@@ -58,40 +58,38 @@ const FeedbackGenerator = ({ handleGenerateQuestions }) => {
         type="text"
         value={feedbackType}
         onChange={(e) => setFeedbackType(e.target.value)}
-        placeholder="Enter feedback type (e.g., Performance Review)"
-        className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        placeholder="Feedback Type (e.g., Performance Review)"
+        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
 
-      {/* Select Feedback Receiver */}
+      {/* Feedback Receiver Selection */}
       <select
         value={feedbackReceiver}
         onChange={(e) => setFeedbackReceiver(e.target.value)}
-        className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
       >
-        <option value="">Select Feedback Receiver</option>
-        <option value="Manager">Manager</option>
-        <option value="Peer">Peer</option>
-        <option value="Employee">Employee</option>
-        <option value="Self">Self</option>
+        <option value="Manager">Manager Feedback</option>
+        <option value="Peer">Peer Feedback</option>
+        <option value="Self">Self Assessment</option>
       </select>
 
-      {/* Generate Feedback Questions Button */}
+      {/* Generate Button */}
       <button
         onClick={handleGenerateFeedback}
-        disabled={!role.trim() || !feedbackType.trim() || !feedbackReceiver.trim() || isGenerating}
-        className={`w-full py-2 px-4 rounded-md transition ${
-          role.trim() && feedbackType.trim() && feedbackReceiver.trim() && !isGenerating
-            ? "bg-indigo-600 text-white hover:bg-indigo-700"
-            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+        disabled={isGenerating || !role.trim() || !feedbackType.trim()}
+        className={`w-full px-4 py-2 text-white rounded-md transition ${
+          isGenerating || !role.trim() || !feedbackType.trim()
+            ? 'bg-indigo-300 cursor-not-allowed'
+            : 'bg-indigo-600 hover:bg-indigo-700'
         }`}
       >
         {isGenerating ? (
-          <div className="flex items-center justify-center">
-            <Loader2 className="animate-spin mr-2" size={20} />
-            Generating Questions...
-          </div>
+          <span className="flex items-center justify-center">
+            <Loader2 className="animate-spin mr-2" size={18} />
+            Generating...
+          </span>
         ) : (
-          "Generate Feedback Questions"
+          'Generate Questions'
         )}
       </button>
     </div>

@@ -133,15 +133,15 @@ const HRDashboard = () => {
     setGeneratedQuestions([]);
     
     try {
-      // Call backend to generate feedback questions
-      const response = await axios.post("/feedback/generate-feedback/", {
+      // Call backend to generate feedback questions using the AI API
+      const response = await axios.post("/feedback/generate-ai-feedback/", {
         role: params.role,
         feedback_type: params.feedbackType,
         feedback_receiver: params.feedbackReceiver
       });
 
       // Set generated questions from API response
-      setGeneratedQuestions(response.data);
+      setGeneratedQuestions(response.data.questions);
     } catch (error) {
       console.error('Error generating custom questions:', error);
       
