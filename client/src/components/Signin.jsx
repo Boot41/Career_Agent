@@ -8,24 +8,23 @@ function Signin() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setError('');
 
+    try {
     // Basic client-side validation
     if (!username.trim() || !password.trim()) {
       setError('Please enter both username and password');
       return;
     }
 
-    try {
       // Make API call to backend login endpoint
       const response = await axios.post('/auth/login/', {
         username,
         password
       });
 
-      // Log the full response for debugging
       console.log('Login Response:', response.data);
 
       // If login is successful

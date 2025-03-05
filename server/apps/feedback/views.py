@@ -76,12 +76,37 @@ class SubmitAnswersView(View):
     def post(self, request):
         try:
             data = json.loads(request.body)
-            feedback = Feedback.submit_answers(
-                feedback_id=data.get('feedback_id'),
-                answers=data.get('answers')
-            )
-            return JsonResponse({'id': feedback.id}, status=200)
+            print("Received data:", data)  # Log incoming data
+            
+            feedback_id = data.get('feedback_id')
+            answers = data.get('answers')
+            
+            if not feedback_id:
+                return JsonResponse({'error': 'feedback_id is required'}, status=400)
+            
+            if not answers:
+                return JsonResponse({'error': 'answers are required'}, status=400)
+            
+            try:
+                # Submit answers and mark as completed
+                feedback = Feedback.submit_answers(
+                    feedback_id=feedback_id,
+                    answers=answers
+                )
+                
+                # Mark the feedback as submitted
+                feedback.is_submitted = True
+                feedback.save()
+
+                return JsonResponse({'id': feedback.id}, status=200)
+            except Feedback.DoesNotExist:
+                return JsonResponse({'error': f'Feedback with id {feedback_id} does not exist'}, status=404)
+            
+        except json.JSONDecodeError as e:
+            print(f"JSON decode error: {str(e)}")
+            return JsonResponse({'error': 'Invalid JSON format'}, status=400)
         except Exception as e:
+            print(f"Error in SubmitAnswersView: {str(e)}")
             return JsonResponse({'error': str(e)}, status=400)
 
 @method_decorator(csrf_exempt, name='dispatch')

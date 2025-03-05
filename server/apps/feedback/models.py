@@ -60,5 +60,6 @@ class Feedback(models.Model):
     def submit_answers(cls, feedback_id, answers):
         feedback = cls.objects.get(id=feedback_id)
         feedback.answers = answers
+        feedback.is_submitted = True
         feedback.save()
         return feedback

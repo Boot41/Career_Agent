@@ -289,6 +289,26 @@ const HRDashboard = () => {
     setSelectedRole(newRole);
   };
 
+  const generateSWOTAnalysis = (employeeId) => {
+    // Logic to generate SWOT analysis
+    console.log('Generating SWOT analysis for employee ID:', employeeId);
+    // Here you would typically make an API call to fetch the SWOT data
+  };
+
+  const checkSWOTAvailability = async (employeeId) => {
+    try {
+      const response = await axios.get(`http://localhost:8001/swot/check-availability/${employeeId}`);
+      if (response.data && response.data.available) {
+        alert(`SWOT analysis is available for employee ID: ${employeeId}`);
+      } else {
+        alert(`SWOT analysis is not available for employee ID: ${employeeId}`);
+      }
+    } catch (error) {
+      console.error('Error checking SWOT availability:', error);
+      alert('Failed to check SWOT availability. Please try again.');
+    }
+  };
+
   // Organization Hierarchy Rendering
   const renderOrganizationHierarchy = () => {
     if (isLoading) {
@@ -490,6 +510,50 @@ const HRDashboard = () => {
     );
   };
 
+  const renderEmployeeList = () => {
+    const employees = [
+      { id: 1, name: 'John Doe', role: 'Employee' },
+      { id: 2, name: 'Jane Smith', role: 'Manager' },
+      { id: 3, name: 'Alice Johnson', role: 'Employee' },
+      // Add more employees as needed
+    ];
+
+    return (
+      <div className="space-y-4">
+        {employees.map(employee => (
+          <div key={employee.id} className="flex justify-between items-center bg-white shadow-md rounded-lg p-4">
+            <div>
+              <h3 className="font-bold text-lg">{employee.name}</h3>
+              <p className="text-gray-600">{employee.role}</p>
+            </div>
+            <div>
+              <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition mr-2" onClick={() => generateSWOTAnalysis(employee.id)}>
+                Generate SWOT Analysis
+              </button>
+              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition" onClick={() => checkSWOTAvailability(employee.id)}>
+                Check SWOT Availability
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderSWOTAnalysis = () => {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white shadow-md rounded-lg p-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+            <FileText className="mr-3 text-indigo-600" /> 
+            SWOT Analysis
+          </h2>
+          {renderEmployeeList()}
+        </div>
+      </div>
+    );
+  };
+
   const headerUserName = userData ? `${userData.name} (${userData.role})` : 'Loading...';
 
   return (
@@ -539,6 +603,16 @@ const HRDashboard = () => {
                     }`}
                   >
                     Feedback Generation
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('swot')}
+                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'swot' 
+                        ? 'border-indigo-500 text-indigo-600' 
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    SWOT Analysis
                   </button>
                 </nav>
               </div>
@@ -632,8 +706,10 @@ const HRDashboard = () => {
                 ) : (
                   renderOrganizationHierarchy()
                 )
-              ) : (
+              ) : activeTab === 'feedback' ? (
                 renderFeedbackGeneration()
+              ) : (
+                renderSWOTAnalysis()
               )}
             </div>
 
