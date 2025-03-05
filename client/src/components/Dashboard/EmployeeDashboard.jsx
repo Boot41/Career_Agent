@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
-import { MessageSquareText, FileText, Send } from 'lucide-react';
+import { MessageSquareText, FileText, Send, TrendingUp } from 'lucide-react';
+import axios from 'axios';
+import Modal from 'react-modal';
 
 const EmployeeDashboard = () => {
   const [userData, setUserData] = useState(null);
@@ -13,6 +15,11 @@ const EmployeeDashboard = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [responses, setResponses] = useState({});
+  // SWOT Analysis state variables
+  const [swotLoading, setSwotLoading] = useState(false);
+  const [swotError, setSwotError] = useState(null);
+  const [swotData, setSwotData] = useState(null);
+  const [isSwotModalOpen, setIsSwotModalOpen] = useState(false);
 
   useEffect(() => {
     const storedUserData = localStorage.getItem('userData');
@@ -121,6 +128,132 @@ const EmployeeDashboard = () => {
     setIsFormOpen(true);
   };
 
+  // Function to check SWOT analysis availability for the current user
+  const checkSWOTAvailability = async () => {
+    if (!userData || !userData.id) {
+      console.error('User data not available');
+      return;
+    }
+
+    setSwotLoading(true);
+    setSwotError(null);
+    
+    try {
+      console.log('Checking SWOT availability for user ID:', userData.id);
+      const response = await axios.get(`http://localhost:8001/feedback/swot-analysis/availability/?user_id=${userData.id}`);
+      
+      console.log('SWOT Analysis API Response:', response);
+      
+      if (response.status === 200) {
+        if (response.data && response.data.length > 0) {
+          console.log('SWOT analyses found:', response.data.length);
+          console.log('SWOT data details:', JSON.stringify(response.data, null, 2));
+          setSwotData(response.data);
+          setIsSwotModalOpen(true);
+        } else {
+          console.log('No SWOT analyses found in the response data');
+          alert('No SWOT analysis available for you yet.');
+        }
+      } else {
+        console.error('Error checking SWOT availability:', response.statusText);
+        setSwotError('Failed to fetch SWOT analysis. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error checking SWOT availability:', error);
+      
+      // Check if it's a 404 error (No SWOT analyses found)
+      if (error.response && error.response.status === 404) {
+        console.log('404 response received. Message:', error.response.data.message);
+        alert('No SWOT analysis available for you yet.');
+      } else {
+        setSwotError('Failed to fetch SWOT analysis. Please try again.');
+      }
+    } finally {
+      setSwotLoading(false);
+    }
+  };
+
+  // SWOT Modal Component
+  const SwotModal = () => {
+    return (
+      <Modal 
+        isOpen={isSwotModalOpen} 
+        onRequestClose={() => setIsSwotModalOpen(false)}
+        className="bg-white p-6 rounded-lg shadow-xl max-w-4xl mx-auto mt-20 max-h-[80vh] overflow-y-auto"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex justify-center"
+      >
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-800">My SWOT Analysis</h2>
+          <button 
+            onClick={() => setIsSwotModalOpen(false)}
+            className="p-2 rounded-full hover:bg-gray-100"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        {swotLoading && (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading your SWOT analysis...</p>
+          </div>
+        )}
+        
+        {swotError && (
+          <div className="text-center py-8">
+            <p className="text-red-600">{swotError}</p>
+          </div>
+        )}
+        
+        {!swotLoading && !swotError && swotData && swotData.length > 0 ? (
+          swotData.map((swot, index) => (
+            <div key={swot.id} className="mb-8 p-6 border border-gray-200 rounded-lg bg-gray-50">
+              <div className="mb-4 pb-3 border-b border-gray-200">
+                <h3 className="text-xl font-semibold text-gray-700">SWOT Analysis for Year: {swot.year}</h3>
+                <p className="text-sm text-gray-500">Created: {new Date(swot.created_at).toLocaleDateString()}</p>
+              </div>
+              
+              <div className="mb-4">
+                <h4 className="font-bold text-gray-700 mb-2">Summary</h4>
+                <p className="text-gray-600 whitespace-pre-line">{swot.summary}</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-4 bg-green-50 border border-green-100 rounded-lg">
+                  <h4 className="font-bold text-green-700 mb-2">Strengths</h4>
+                  <p className="text-gray-600 whitespace-pre-line">{swot.strengths}</p>
+                </div>
+                
+                <div className="p-4 bg-red-50 border border-red-100 rounded-lg">
+                  <h4 className="font-bold text-red-700 mb-2">Weaknesses</h4>
+                  <p className="text-gray-600 whitespace-pre-line">{swot.weaknesses}</p>
+                </div>
+                
+                <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                  <h4 className="font-bold text-blue-700 mb-2">Opportunities</h4>
+                  <p className="text-gray-600 whitespace-pre-line">{swot.opportunities}</p>
+                </div>
+                
+                <div className="p-4 bg-yellow-50 border border-yellow-100 rounded-lg">
+                  <h4 className="font-bold text-yellow-700 mb-2">Threats</h4>
+                  <p className="text-gray-600 whitespace-pre-line">{swot.threats}</p>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          !swotLoading && !swotError && (
+            <div className="text-center py-8">
+              <p className="text-gray-600">No SWOT analysis found for you.</p>
+            </div>
+          )
+        )}
+      </Modal>
+    );
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar userType="employee" />
@@ -132,6 +265,39 @@ const EmployeeDashboard = () => {
         />
         
         <main className="flex-1 overflow-y-auto p-6">
+          {/* Quick Actions Section */}
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* SWOT Analysis Card */}
+              <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition">
+                <div className="flex items-center mb-4">
+                  <div className="p-2 bg-indigo-100 rounded-full mr-4">
+                    <TrendingUp className="h-6 w-6 text-indigo-600" />
+                  </div>
+                  <h3 className="text-lg font-medium text-gray-800">SWOT Analysis</h3>
+                </div>
+                <p className="text-gray-600 mb-4">View your strengths, weaknesses, opportunities, and threats analysis.</p>
+                <button 
+                  onClick={checkSWOTAvailability}
+                  disabled={swotLoading}
+                  className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center justify-center"
+                >
+                  {swotLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Loading...
+                    </>
+                  ) : (
+                    'View SWOT Analysis'
+                  )}
+                </button>
+              </div>
+              
+              {/* Other quick action cards can be added here */}
+            </div>
+          </div>
+
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Pending Feedback Requests</h2>
           {pendingFeedback.length > 0 ? (
             <div>
@@ -208,6 +374,9 @@ const EmployeeDashboard = () => {
           )}
         </main>
       </div>
+      
+      {/* SWOT Modal */}
+      <SwotModal />
     </div>
   );
 };
