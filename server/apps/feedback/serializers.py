@@ -6,3 +6,8 @@ class FeedbackPromptSerializer(serializers.Serializer):
     feedback_receiver = serializers.ChoiceField(
         choices=["Manager", "Peer", "Employee", "Self"]
     )
+
+class FeedbackCreateSerializer(serializers.Serializer):
+    giver_id = serializers.CharField(max_length=255)
+    feedback_type = serializers.ChoiceField(choices=["Manager", "Peer", "Self"])
+    organization_id = serializers.CharField(max_length=255)

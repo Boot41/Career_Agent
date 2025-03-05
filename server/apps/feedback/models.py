@@ -15,21 +15,40 @@ class ManagerEmployee(models.Model):
 
 
 class Feedback(models.Model):
-    giver = models.IntegerField()  # ID of the feedback giver
-    receiver = models.IntegerField()  # ID of the feedback receiver
-    organization_id = models.IntegerField()  # Organization ID
-    feedback_type = models.CharField(max_length=50)  # Type of feedback
-    questions = models.JSONField()  # List of questions
-    answers = models.JSONField(null=True)  # List of answers, initially null
-    created_at = models.DateTimeField(auto_now_add=True)  # Timestamp when feedback is created
-
+    """Model for storing feedback data."""
+    FEEDBACK_TYPE_CHOICES = [
+        ('Manager', 'Manager'),
+        ('Peer', 'Peer'),
+        ('Self', 'Self'),
+    ]
+    
+    id = models.AutoField(primary_key=True)
+    giver = models.CharField(max_length=100)
+    receiver = models.CharField(max_length=100)
+    organization_id = models.CharField(max_length=100)
+    feedback_type = models.CharField(max_length=20, choices=FEEDBACK_TYPE_CHOICES)
+    questions = models.JSONField()
+    answers = models.JSONField(null=True, blank=True)
+    is_submitted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
     def __str__(self):
         return f'Feedback from {self.giver} to {self.receiver}'
 
+    @property
+    def is_completed(self):
+        """Check if feedback has been completed."""
+        return self.is_submitted and self.answers is not None
+
     @classmethod
     def create_feedback(cls, giver, receiver, organization_id, feedback_type, questions):
+        # Ensure all IDs are strings
+        giver = str(giver)
+        receiver = str(receiver)
+        organization_id = str(organization_id)
+        
         feedback = cls(giver=giver, receiver=receiver, organization_id=organization_id,
-                        feedback_type=feedback_type, questions=questions)
+                      feedback_type=feedback_type, questions=questions)
         feedback.save()
         return feedback
 

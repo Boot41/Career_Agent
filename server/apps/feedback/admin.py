@@ -1,7 +1,14 @@
 from django.contrib import admin
-from .models import ManagerEmployee
+from .models import ManagerEmployee, Feedback
 
 @admin.register(ManagerEmployee)
 class ManagerEmployeeAdmin(admin.ModelAdmin):
     list_display = ('id', 'manager', 'employee', 'organization')
     search_fields = ('manager__username', 'employee__username')
+
+@admin.register(Feedback)
+class FeedbackAdmin(admin.ModelAdmin):
+    list_display = ('id', 'giver', 'receiver', 'feedback_type', 'is_completed', 'created_at')
+    list_filter = ('feedback_type',)
+    search_fields = ('giver', 'receiver')
+    readonly_fields = ('created_at',)
