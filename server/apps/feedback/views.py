@@ -9,7 +9,7 @@ from groq import Groq
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
-from .serializers import FeedbackPromptSerializer, FeedbackCreateSerializer
+from .serializers import FeedbackPromptSerializer, FeedbackCreateSerializer, FeedbackSerializer
 from apps.authentication.models import AuthUser
 from apps.organizations.models import Organization
 
@@ -35,26 +35,41 @@ class PendingFeedbackView(APIView):
     def get(self, request):
         """Retrieves pending feedback for a user."""
         print("=== PendingFeedbackView.get() called ===")
-        
+
         # Get user_id from query parameters
         user_id = request.query_params.get('user_id')
         if not user_id:
             return Response({"error": "user_id is required"}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         # Ensure user_id is a string
         user_id = str(user_id)
-        
-        # Fetch pending feedback where the user is the giver
+
+        # Fetch pending feedback where giver matches and is_submitted is False
         pending_feedback = Feedback.objects.filter(
             giver=user_id,
             is_submitted=False
         )
-        
-        # Serialize the feedback data
-        serializer = FeedbackSerializer(pending_feedback, many=True)
-        
-        print(f"Found {len(serializer.data)} pending feedback items for user {user_id}")
-        return Response(serializer.data)
+
+        # Get receiver names from AuthUser model
+        feedback_data = []
+        for feedback in pending_feedback:
+            try:
+                receiver_user = AuthUser.objects.get(id=feedback.receiver)
+                receiver_name = receiver_user.name
+            except AuthUser.DoesNotExist:
+                receiver_name = feedback.receiver  # Fallback to receiver ID if user not found
+
+            feedback_data.append({
+                'id': feedback.id,
+                'receiver': feedback.receiver,
+                'receiver_name': receiver_name,
+                'feedback_type': feedback.feedback_type,
+                'questions': feedback.questions,
+                'created_at': feedback.created_at
+            })
+
+        print(f"Found {len(feedback_data)} pending feedback items for user {user_id}")
+        return Response(feedback_data)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class SubmitAnswersView(View):
@@ -513,3 +528,29 @@ class CreateFeedbackAPI(APIView):
             ]
         }
         return fallback.get(feedback_type, ["What are your strengths and weaknesses?"] * 5)
+
+class ManagedEmployeesView(APIView):
+    """API view to retrieve all employees managed by a specific manager."""
+    
+    def get(self, request):
+        """Retrieves all employees managed by the specified manager."""
+        manager_id = request.query_params.get('manager_id')
+        if not manager_id:
+            return Response({"error": "manager_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Fetch employees managed by the specified manager
+        managed_employees = ManagerEmployee.objects.filter(manager_id=manager_id).select_related('employee')
+        
+        # Serialize the employee data
+        employee_data = [
+            {
+                "id": str(emp.employee.id),
+                "name": emp.employee.name,
+                "email": emp.employee.email,
+                "role": emp.employee.role,
+                "username": emp.employee.username
+            }
+            for emp in managed_employees
+        ]
+        
+        return Response(employee_data)

@@ -29,6 +29,7 @@ const HRDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userData, setUserData] = useState(null);
+  const [organizationId, setOrganizationId] = useState(null); // Add this line to store organization ID
 
   // Mock data - to be replaced with actual backend data
   const employees = [
@@ -57,6 +58,13 @@ const HRDashboard = () => {
   const [selectedFeedbackEmployee, setSelectedFeedbackEmployee] = useState(null);
   const [generatedQuestions, setGeneratedQuestions] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [id, setId] = useState(null);
+  const [selectedRole, setSelectedRole] = useState("");  // Add role state
+
+  // Log selectedRole changes
+  useEffect(() => {
+    console.log('Selected Role State:', selectedRole);
+  }, [selectedRole]);
 
   // Fetch Organization Hierarchy and User Data
   useEffect(() => {
@@ -72,20 +80,29 @@ const HRDashboard = () => {
           const parsedUserData = JSON.parse(storedUserData);
           setUserData(parsedUserData);
 
-          // Fetch organization hierarchy and details
-          const response = await axios.get('/org/hierarchy/', {
-            params: { organization_id: parsedUserData.organization_id }
-          });
+          if (parsedUserData) {
+            if (parsedUserData.organization_id) {
+              setOrganizationId(parsedUserData.organization_id);
+              console.log('Organization ID:', parsedUserData.organization_id);
+            }
 
-          if (response.data && response.data.success) {
-            setOrganizationHierarchy({
-              managers: response.data.managers || [],
-              unassignedEmployees: response.data.unassigned_employees || [],
-              organization_name: response.data.organization_name || '',
-              organization_details: response.data.organization_details || {}
+            // Fetch organization hierarchy and details
+            const response = await axios.get('/org/hierarchy/', {
+              params: { organization_id: parsedUserData.organization_id }
             });
+
+            if (response.data && response.data.success) {
+              setOrganizationHierarchy({
+                managers: response.data.managers || [],
+                unassignedEmployees: response.data.unassigned_employees || [],
+                organization_name: response.data.organization_name || '',
+                organization_details: response.data.organization_details || {}
+              });
+            } else {
+              throw new Error('Invalid response format');
+            }
           } else {
-            throw new Error('Invalid response format');
+            setError('No user data found. Please log in again.');
           }
         } else {
           setError('No user data found. Please log in again.');
@@ -103,6 +120,14 @@ const HRDashboard = () => {
 
   const handleEmployeeSelect = (employee) => {
     setSelectedEmployee(employee);
+    // Store the employee ID in the id state
+    if (employee && employee.id) {
+      console.log('Setting employee ID:', employee.id);
+      setId(employee.id);
+    } else {
+      console.log('Employee object or ID is missing:', employee);
+      setId(null);
+    }
   };
 
   const handleInviteEmployee = () => {
@@ -134,8 +159,8 @@ const HRDashboard = () => {
     
     try {
       // Call backend to generate feedback questions using the AI API
-      const response = await axios.post("/feedback/generate-ai-feedback/", {
-        role: params.role,
+      const response = await axios.post("http://localhost:8001/feedback/generate-questions/", {
+        role: selectedRole || params.role, // Use selectedRole if available, otherwise use params.role
         feedback_type: params.feedbackType,
         feedback_receiver: params.feedbackReceiver
       });
@@ -172,8 +197,96 @@ const HRDashboard = () => {
     }
   };
 
-  const handleAcceptQuestions = () => {
-    console.log('Questions accepted:', generatedQuestions);
+  const handleAcceptQuestions = async () => {
+    try {
+      // Ensure we have all required data
+      if (!id) {
+        console.error('No employee ID selected');
+        alert('Please select an employee first');
+        return;
+      }
+
+      if (!selectedRole) {
+        console.error('No feedback type selected');
+        alert('Please select a feedback type first');
+        return;
+      }
+
+      if (!organizationId) {
+        console.error('No organization ID available');
+        alert('Organization ID is missing');
+        return;
+      }
+
+      // Make sure feedback_type is one of the valid choices: "Manager", "Peer", or "Self"
+      // The FeedbackGenerator component sets selectedRole to one of these values
+      let feedbackType = selectedRole;
+      
+      // Ensure it's one of the valid choices
+      if (!["Manager", "Peer", "Self"].includes(feedbackType)) {
+        // Try to capitalize first letter as fallback
+        feedbackType = selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1).toLowerCase();
+        
+        // If still not valid, show error and return
+        if (!["Manager", "Peer", "Self"].includes(feedbackType)) {
+          console.error(`Invalid feedback type: ${selectedRole}`);
+          alert('Invalid feedback type. Must be Manager, Peer, or Self.');
+          return;
+        }
+      }
+
+      // Create feedback request payload - using exact IDs without modification
+      const payload = {
+        giver_id: id,
+        feedback_type: feedbackType,
+        organization_id: organizationId,
+        questions: generatedQuestions
+      };
+
+      console.log('Sending feedback data:', payload);
+
+      // Call the API to create feedback
+      const response = await axios.post("http://localhost:8001/feedback/create-feedback/", payload);
+      
+      console.log('Feedback created successfully:', response.data);
+      
+      // Clear generated questions after successful submission
+      setGeneratedQuestions([]);
+      
+      // Show success message
+      alert('Feedback questions accepted and saved successfully!');
+      
+    } catch (error) {
+      console.error('Error accepting questions:', error);
+      
+      // More detailed error logging
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+        
+        // Show specific error message based on the response
+        if (error.response.data && typeof error.response.data === 'object') {
+          const errorMessages = [];
+          for (const key in error.response.data) {
+            errorMessages.push(`${key}: ${error.response.data[key]}`);
+          }
+          alert(`Failed to save feedback: ${errorMessages.join(', ')}`);
+        } else {
+          alert('Failed to save feedback questions. Please try again.');
+        }
+      } else if (error.request) {
+        console.error('Error request:', error.request);
+        alert('No response received from server. Please check your connection.');
+      } else {
+        console.error('Error message:', error.message);
+        alert(`Error: ${error.message}`);
+      }
+    }
+  };
+
+  const handleRoleChange = (newRole) => {
+    console.log('Setting role:', newRole);
+    setSelectedRole(newRole);
   };
 
   // Organization Hierarchy Rendering
@@ -303,6 +416,11 @@ const HRDashboard = () => {
               onChange={(e) => {
                 const selectedPerson = allPeople.find(person => person.id === e.target.value);
                 setSelectedFeedbackEmployee(selectedPerson);
+                // Set the id state variable when a person is selected
+                if (selectedPerson && selectedPerson.id) {
+                  console.log('Setting feedback employee ID:', selectedPerson.id);
+                  setId(selectedPerson.id);
+                }
               }}
             >
               <option value="">Select a Person</option>
@@ -337,6 +455,7 @@ const HRDashboard = () => {
           {/* Feedback Generator */}
           <FeedbackGenerator 
             handleGenerateQuestions={handleGenerateQuestions}
+            onRoleChange={handleRoleChange}
           />
 
           {/* Generated Questions */}

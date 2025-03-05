@@ -4,7 +4,8 @@ from .views import (
     PendingFeedbackView, 
     SubmitAnswersView, 
     GenerateQuestionsView,
-    GenerateFeedbackView
+    GenerateFeedbackView,
+    ManagedEmployeesView
 )
 
 urlpatterns = [
@@ -13,6 +14,7 @@ urlpatterns = [
     path('submit-answers/', SubmitAnswersView.as_view(), name='submit_answers'),
     path('generate-questions/', GenerateQuestionsView.as_view(), name='generate_questions'),
     path('generate-feedback/', GenerateFeedbackView.as_view(), name='generate_feedback'),
+    path('managed-employees/', ManagedEmployeesView.as_view(), name='managed_employees'),
     # Legacy endpoints for backward compatibility
     path('generate-ai-feedback/', GenerateFeedbackView.as_view(), name='generate_ai_feedback'),
     path('api/create-feedback/', CreateFeedbackAPI.as_view(), name='api_create_feedback'),

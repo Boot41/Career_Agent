@@ -5,12 +5,22 @@ import { Loader2 } from "lucide-react";
  * Feedback Generator Component
  * Allows HR to generate AI-driven feedback questions
  */
-const FeedbackGenerator = ({ handleGenerateQuestions }) => {
+const FeedbackGenerator = ({ handleGenerateQuestions, onRoleChange }) => {
   const [role, setRole] = useState(""); // Role input by HR
   const [feedbackType, setFeedbackType] = useState(""); // Feedback type input by HR
   const [feedbackReceiver, setFeedbackReceiver] = useState("Manager"); // Who is providing the feedback (default: Manager)
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
+
+  // Function to handle role change
+  const handleRoleInputChange = (e) => {
+    const newRole = e.target.value;
+    setRole(newRole);
+    // Pass role change to parent component
+    if (onRoleChange) {
+      onRoleChange(newRole);
+    }
+  };
 
   // Function to generate feedback questions
   const handleGenerateFeedback = async () => {
@@ -48,7 +58,7 @@ const FeedbackGenerator = ({ handleGenerateQuestions }) => {
       <input
         type="text"
         value={role}
-        onChange={(e) => setRole(e.target.value)}
+        onChange={handleRoleInputChange}
         placeholder="Employee Role (e.g., Software Engineer)"
         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
@@ -65,12 +75,19 @@ const FeedbackGenerator = ({ handleGenerateQuestions }) => {
       {/* Feedback Receiver Selection */}
       <select
         value={feedbackReceiver}
-        onChange={(e) => setFeedbackReceiver(e.target.value)}
+        onChange={(e) => {
+          const newFeedbackReceiver = e.target.value;
+          setFeedbackReceiver(newFeedbackReceiver);
+          // Pass the feedback receiver as role to parent component
+          if (onRoleChange) {
+            onRoleChange(newFeedbackReceiver);
+          }
+        }}
         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
       >
-        <option value="Manager">Manager Feedback</option>
-        <option value="Peer">Peer Feedback</option>
-        <option value="Self">Self Assessment</option>
+        <option value="Manager">Manager</option>
+        <option value="Peer">Peer</option>
+        <option value="Self">Self</option>
       </select>
 
       {/* Generate Button */}
