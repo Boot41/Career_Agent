@@ -14,6 +14,7 @@ class FeedbackPromptSerializer(serializers.Serializer):
     )
 
 class FeedbackCreateSerializer(serializers.Serializer):
-    giver_id = serializers.CharField(max_length=255)
+    receiver_id = serializers.UUIDField()
     feedback_type = serializers.ChoiceField(choices=["Manager", "Peer", "Self"])
-    organization_id = serializers.CharField(max_length=255)
+    organization_id = serializers.UUIDField()
+    questions = serializers.ListField(child=serializers.CharField())

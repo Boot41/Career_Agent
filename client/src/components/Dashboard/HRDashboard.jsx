@@ -206,91 +206,41 @@ const HRDashboard = () => {
 
   const handleAcceptQuestions = async () => {
     try {
-      // Ensure we have all required data
-      if (!id) {
-        console.error('No employee ID selected');
-        alert('Please select an employee first');
-        return;
-      }
+        const payload = {
+            receiver_id: id,
+            feedback_type: selectedRole,
+            organization_id: organizationId,
+            questions: generatedQuestions // Include questions from the frontend
+        };
 
-      if (!selectedRole) {
-        console.error('No feedback type selected');
-        alert('Please select a feedback type first');
-        return;
-      }
+        console.log('Sending feedback data:', payload);
 
-      if (!organizationId) {
-        console.error('No organization ID available');
-        alert('Organization ID is missing');
-        return;
-      }
-
-      // Make sure feedback_type is one of the valid choices: "Manager", "Peer", or "Self"
-      // The FeedbackGenerator component sets selectedRole to one of these values
-      let feedbackType = selectedRole;
-      
-      // Ensure it's one of the valid choices
-      if (!["Manager", "Peer", "Self"].includes(feedbackType)) {
-        // Try to capitalize first letter as fallback
-        feedbackType = selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1).toLowerCase();
+        // Call the API to create feedback
+        const response = await axios.post("http://localhost:8001/feedback/create-feedback/", payload);
         
-        // If still not valid, show error and return
-        if (!["Manager", "Peer", "Self"].includes(feedbackType)) {
-          console.error(`Invalid feedback type: ${selectedRole}`);
-          alert('Invalid feedback type. Must be Manager, Peer, or Self.');
-          return;
-        }
-      }
-
-      // Create feedback request payload - using exact IDs without modification
-      const payload = {
-        giver_id: id,
-        feedback_type: feedbackType,
-        organization_id: organizationId,
-        questions: generatedQuestions
-      };
-
-      console.log('Sending feedback data:', payload);
-
-      // Call the API to create feedback
-      const response = await axios.post("http://localhost:8001/feedback/create-feedback/", payload);
-      
-      if (response.status === 200) {
-        console.log('Feedback created successfully:', response.data);
-        
-        // Clear generated questions after successful submission
-        setGeneratedQuestions([]);
-        
-        // Show success message
-        alert('Feedback questions accepted and saved successfully!');
-      } else {
-        console.error('Error accepting questions:', response.statusText);
-      }
-    } catch (error) {
-      console.error('Error accepting questions:', error);
-      
-      // More detailed error logging
-      if (error.response) {
-        console.error('Error response data:', error.response.data);
-        console.error('Error response status:', error.response.status);
-        
-        // Show specific error message based on the response
-        if (error.response.data && typeof error.response.data === 'object') {
-          const errorMessages = [];
-          for (const key in error.response.data) {
-            errorMessages.push(`${key}: ${error.response.data[key]}`);
-          }
-          alert(`Failed to save feedback: ${errorMessages.join(', ')}`);
+        if (response.status === 200 || response.status === 201) {
+            console.log('Feedback created successfully:', response.data);
+            // Clear generated questions after successful submission
+            setGeneratedQuestions([]);
+            alert('Feedback questions accepted and saved successfully!');
         } else {
-          alert('Failed to save feedback questions. Please try again.');
+            console.error('Error accepting questions:', response.statusText);
         }
-      } else if (error.request) {
-        console.error('Error request:', error.request);
-        alert('No response received from server. Please check your connection.');
-      } else {
-        console.error('Error message:', error.message);
-        alert(`Error: ${error.message}`);
-      }
+    } catch (error) {
+        console.error('Error accepting questions:', error);
+        
+        // More detailed error logging
+        if (error.response) {
+            console.error('Error response data:', error.response.data);
+            console.error('Error response status:', error.response.status);
+            alert('Failed to save feedback questions. Please try again.');
+        } else if (error.request) {
+            console.error('Error request:', error.request);
+            alert('No response received from server. Please check your connection.');
+        } else {
+            console.error('Error message:', error.message);
+            alert(`Error: ${error.message}`);
+        }
     }
   };
 

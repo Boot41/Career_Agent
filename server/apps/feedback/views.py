@@ -31,7 +31,7 @@ class CreateFeedbackView(View):
     def post(self, request):
         try:
             data = json.loads(request.body)
-            print(f'Received data: {data}')
+            print(f'Received data: {data}')  # Log incoming data
             feedback = Feedback.create_feedback(
                 giver=data.get('giver'),
                 receiver=data.get('receiver'),
@@ -41,6 +41,7 @@ class CreateFeedbackView(View):
             )
             return JsonResponse({'id': feedback.id}, status=201)
         except Exception as e:
+            print(f'Error occurred: {str(e)}')  # Log the error
             return JsonResponse({'error': str(e)}, status=400)
 
 class PendingFeedbackView(APIView):
@@ -346,167 +347,93 @@ class CreateFeedbackAPI(APIView):
         print("=== CreateFeedbackAPI.post() called ===")
         print(f"Request data: {request.data}")
 
-        # Validate request data using serializer
         serializer = FeedbackCreateSerializer(data=request.data)
         if not serializer.is_valid():
-            print(f"Serializer errors: {serializer.errors}")
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            errors = serializer.errors.copy()
+            if 'giver_id' in errors:
+                del errors['giver_id']
+            if errors:
+                print(f"Serializer errors: {errors}")
+                return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
-        # Extract data from the request
-        giver_id = serializer.validated_data["giver_id"]
+        receiver_id = serializer.validated_data["receiver_id"]
         feedback_type = serializer.validated_data["feedback_type"]
         organization_id = serializer.validated_data["organization_id"]
         
-        print(f"Validated data: giver_id={giver_id}, feedback_type={feedback_type}, organization_id={organization_id}")
+        print(f"Validated data: receiver_id={receiver_id}, feedback_type={feedback_type}, organization_id={organization_id}")
 
-        # Determine the receiver based on feedback_type
-        receiver_id = self._get_receiver(giver_id, feedback_type, organization_id)
+        # Determine the giver(s) based on feedback type
+        givers = self._get_givers(receiver_id, feedback_type, organization_id)
         
-        # Check if receiver_id is valid
-        if not receiver_id or receiver_id.startswith("Error"):
-            print(f"No receiver found for giver_id={giver_id}, feedback_type={feedback_type}")
-            return Response({"error": "Receiver not found for this feedback type."}, status=status.HTTP_400_BAD_REQUEST)
+        if not givers:
+            return Response({"error": "No valid giver found for this feedback type."}, status=status.HTTP_400_BAD_REQUEST)
         
-        print(f"Receiver determined: receiver_id={receiver_id}")
-        print(f"IMPORTANT: Storing RECEIVER ID (not name): {receiver_id}")
+        feedback_responses = []
+        for giver_id in givers:
+            questions = serializer.validated_data["questions"]
+            if not questions:
+                return Response({"error": "Failed to generate questions."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            try:
+                feedback = Feedback.create_feedback(
+                    giver=giver_id,
+                    receiver=receiver_id,
+                    organization_id=organization_id,
+                    feedback_type=feedback_type,
+                    questions=questions
+                )
+                
+                feedback_responses.append({
+                    "id": feedback.id,
+                    "giver": feedback.giver,
+                    "receiver": feedback.receiver,
+                    "organization_id": feedback.organization_id,
+                    "feedback_type": feedback.feedback_type,
+                    "questions": feedback.questions,
+                    "created_at": feedback.created_at
+                })
+            except Exception as e:
+                print(f"Error creating feedback for giver {giver_id}: {e}")
+                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # Generate AI-based questions or fallback to predefined ones
-        questions = self._generate_questions(feedback_type)
-        
-        if not questions:
-            return Response({"error": "Failed to generate questions."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        try:
-            # Create feedback entry
-            feedback = Feedback.create_feedback(
-                giver=giver_id,
-                receiver=receiver_id,
-                organization_id=organization_id,
-                feedback_type=feedback_type,
-                questions=questions
-            )
-            
-            # Verify that the ID was stored correctly
-            print(f"VERIFICATION: Created feedback with receiver ID: {feedback.receiver}")
-            
-            # Return feedback data
-            return Response({
-                "id": feedback.id,
-                "giver": feedback.giver,
-                "receiver": feedback.receiver,
-                "organization_id": feedback.organization_id,
-                "feedback_type": feedback.feedback_type,
-                "questions": feedback.questions,
-                "created_at": feedback.created_at
-            })
-            
-        except Exception as e:
-            print(f"Error creating feedback: {e}")
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(feedback_responses, status=status.HTTP_201_CREATED)
 
-    def _get_receiver(self, giver_id, feedback_type, organization_id):
-        """
-        Determines the receiver ID based on feedback type.
-        - Manager Feedback → Finds the manager of the giver
-        - Peer Feedback → Finds a peer from the same organization
-        - Self Feedback → Receiver is the same as the giver
-        """
-        print(f"Finding receiver for giver_id={giver_id}, feedback_type={feedback_type}")
-        
+    def _get_givers(self, receiver_id, feedback_type, organization_id):
+        """Returns a list of givers based on feedback type."""
         if feedback_type == "Self":
-            print(f"Self feedback: receiver_id={giver_id}")
-            return str(giver_id)
-        
+            return [str(receiver_id)]
         elif feedback_type == "Manager":
-            return self._get_manager(giver_id, organization_id)
-            
+            return [self._get_manager(receiver_id, organization_id)] if self._get_manager(receiver_id, organization_id) else []
         elif feedback_type == "Peer":
-            return self._get_peer(giver_id, organization_id)
-            
-        else:
-            print(f"Invalid feedback_type: {feedback_type}")
-            return "Invalid feedback type"
+            return self._get_peers(receiver_id, organization_id)
+        return []
 
-    def _get_manager(self, giver_id, organization_id):
-        """
-        Fetch manager ID from ManagerEmployee model.
-        """
+    def _get_manager(self, receiver_id, organization_id):
+        """Fetches the manager of an employee (giver for Manager feedback)."""
         try:
-            # Find the manager for this employee
-            manager_relation = ManagerEmployee.objects.get(
-                employee_id=giver_id,
-                organization_id=organization_id
-            )
-            print(f"Found manager: {manager_relation.manager_id}")
+            manager_relation = ManagerEmployee.objects.get(employee_id=receiver_id, organization_id=organization_id)
             return str(manager_relation.manager_id)
         except ManagerEmployee.DoesNotExist:
-            print(f"No manager found for employee {giver_id} in organization {organization_id}")
-            # For testing purposes, return a default manager ID
-            return "1"  # Default manager ID for testing
+            return None
         except Exception as e:
             print(f"Error finding manager: {e}")
-            return "Error finding manager"
+            return None
 
-    def _get_peer(self, giver_id, organization_id):
-        """
-        Fetch a peer's ID from the same organization.
-        For employees, peers are other employees with the same manager.
-        For managers, peers are other managers in the organization.
-        """
+    def _get_peers(self, receiver_id, organization_id):
+        """Fetches all peers (givers) for peer feedback."""
         try:
-            # Check if the user is a manager
-            is_manager = ManagerEmployee.objects.filter(
-                manager_id=giver_id,
-                organization_id=organization_id
-            ).exists()
-            
-            if is_manager:
-                # If user is a manager, peers are other managers
-                print(f"User {giver_id} is a manager, finding peer managers")
-                peer_managers = ManagerEmployee.objects.filter(
-                    organization_id=organization_id
-                ).exclude(manager_id=giver_id).values_list('manager_id', flat=True).distinct()
-                
-                if peer_managers.exists():
-                    # Return the first peer manager
-                    peer_id = str(peer_managers.first())
-                    print(f"Found peer manager: {peer_id}")
-                    return peer_id
-                else:
-                    print(f"No peer managers found for manager {giver_id}")
-                    # For testing purposes, return a default peer ID
-                    return "2"  # Default peer ID for testing
-            else:
-                # If user is an employee, peers are other employees with the same manager
-                try:
-                    # Find the manager for this employee
-                    manager_relation = ManagerEmployee.objects.get(
-                        employee_id=giver_id,
-                        organization_id=organization_id
-                    )
-                    
-                    # Find other employees with the same manager
-                    peer_employees = ManagerEmployee.objects.filter(
-                        manager_id=manager_relation.manager_id,
-                        organization_id=organization_id
-                    ).exclude(employee_id=giver_id).values_list('employee_id', flat=True)
-                    
-                    if peer_employees.exists():
-                        # Return the first peer employee
-                        peer_id = str(peer_employees.first())
-                        print(f"Found peer employee: {peer_id}")
-                        return peer_id
-                    else:
-                        print(f"No peer employees found for employee {giver_id}")
-                        # For testing purposes, return a default peer ID
-                        return "3"  # Default peer ID for testing
-                except ManagerEmployee.DoesNotExist:
-                    print(f"No manager relation found for employee {giver_id}")
-                    # For testing purposes, return a default peer ID
-                    return "3"  # Default peer ID for testing
+            manager_relation = ManagerEmployee.objects.filter(employee_id=receiver_id, organization_id=organization_id).first()
+            if not manager_relation:
+                return []
+
+            peer_employees = ManagerEmployee.objects.filter(
+                manager_id=manager_relation.manager_id, organization_id=organization_id
+            ).exclude(employee_id=receiver_id).values_list('employee_id', flat=True)
+
+            return list(map(str, peer_employees)) if peer_employees.exists() else []
         except Exception as e:
-            print(f"Error finding peer: {e}")
-            return "Error finding peer"
+            print(f"Error finding peers: {e}")
+            return []
 
     def _generate_questions(self, feedback_type):
         """Generates AI-based feedback questions or falls back to predefined ones."""
