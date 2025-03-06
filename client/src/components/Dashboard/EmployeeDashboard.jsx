@@ -4,6 +4,7 @@ import Header from './Header';
 import { MessageSquareText, FileText, Send, TrendingUp } from 'lucide-react';
 import axios from 'axios';
 import Modal from 'react-modal';
+import Chatbot from './Chatbot'; // Import the Chatbot component
 
 const EmployeeDashboard = () => {
   const [userData, setUserData] = useState(null);
@@ -20,11 +21,16 @@ const EmployeeDashboard = () => {
   const [swotError, setSwotError] = useState(null);
   const [swotData, setSwotData] = useState(null);
   const [isSwotModalOpen, setIsSwotModalOpen] = useState(false);
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false); // New state variable to track chatbot toggle
 
   useEffect(() => {
     const storedUserData = localStorage.getItem('userData');
     if (storedUserData) {
-      setUserData(JSON.parse(storedUserData));
+      const userData = JSON.parse(storedUserData);
+      console.log('User Data:', userData);  // Log user data
+      setUserData(userData);
+      const userId = userData.id;  // Fetch the user ID
+      console.log('User ID:', userId);  // Log user ID
     }
   }, []);
 
@@ -371,6 +377,19 @@ const EmployeeDashboard = () => {
             </div>
           ) : (
             <p className="text-gray-600 mt-6">No submitted feedback found.</p>
+          )}
+          <button 
+            className="fixed bottom-6 right-6 bg-indigo-600 text-white rounded-full p-4 hover:bg-indigo-700 transition"
+            onClick={() => setIsChatbotOpen(!isChatbotOpen)}
+          >
+            <MessageSquareText size={24} />
+          </button>
+          {isChatbotOpen && (
+            <Chatbot 
+              isOpen={isChatbotOpen} 
+              setIsOpen={setIsChatbotOpen} 
+              userId={userData ? userData.id : null}  // Pass userId as prop
+            />
           )}
         </main>
       </div>

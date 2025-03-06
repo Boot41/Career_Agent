@@ -22,4 +22,5 @@ urlpatterns = [
     path('auth/', include('apps.authentication.urls')),
     path('org/', include('apps.organizations.urls')),
     path('feedback/', include('apps.feedback.urls')),  # Add feedback app URLs
+    path("chatbot/", include("apps.chatbot.url")),
 ]

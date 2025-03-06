@@ -4,8 +4,9 @@ import Header from './Header';
 import { Users, MessageSquareText, Star, Send, Activity } from 'lucide-react';
 import axios from 'axios';
 import Modal from 'react-modal';
+import Chatbot from './Chatbot'; // Import the Chatbot component
 
-const ManagerDashboard = ({ userData }) => {
+const ManagerDashboard = () => {
   const [teamMembers, setTeamMembers] = useState([]);
   const [responses, setResponses] = useState({});
   const [ratings, setRatings] = useState({});
@@ -15,7 +16,8 @@ const ManagerDashboard = ({ userData }) => {
   const [activeTab, setActiveTab] = useState('team'); // Default to 'team'
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedFeedback, setSelectedFeedback] = useState(null);
-  
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false); // Centralized chatbot state
+  const [userData, setUserData] = useState(null); // Define setUserData function here
   // SWOT Analysis State
   const [isSwotModalOpen, setIsSwotModalOpen] = useState(false);
   const [swotData, setSwotData] = useState(null);
@@ -23,6 +25,29 @@ const ManagerDashboard = ({ userData }) => {
   const [swotError, setSwotError] = useState(null);
 
   useEffect(() => {
+    const storedUserData = localStorage.getItem('userData');
+    if (storedUserData) {
+      const userData = JSON.parse(storedUserData);
+      console.log('User Data:', userData);  // Log user data
+      setUserData(userData);
+      const userId = userData.id;  // Fetch the user ID
+      console.log('User ID:', userId);  // Log user ID
+
+      // Fetch SWOT analysis for the user
+      const fetchSwotAnalysis = async () => {
+        try {
+          const response = await axios.post('http://localhost:8001/chatbot/ask/', {
+            message: 'Get my SWOT analysis',
+            user_id: userId
+          });
+          console.log('SWOT Analysis:', response.data);
+        } catch (error) {
+          console.error('Error fetching SWOT analysis:', error);
+        }
+      };
+      fetchSwotAnalysis();
+    }
+
     const fetchTeamMembers = async () => {
       const userId = 'd46f5ded-f660-4e52-aa98-077278c33d7b'; // Use the actual user ID
       try {
@@ -466,6 +491,17 @@ const ManagerDashboard = ({ userData }) => {
       
       {/* Render the SWOT Modal */}
       <SwotModal />
+      
+      {/* Chatbot Toggle Button */}
+      <button 
+        className="fixed bottom-6 right-6 bg-indigo-600 text-white rounded-full p-4 hover:bg-indigo-700 transition"
+        onClick={() => setIsChatbotOpen(!isChatbotOpen)}
+      >
+        <MessageSquareText size={24} />
+      </button>
+
+      {/* Chatbot Component */}
+      <Chatbot isOpen={isChatbotOpen} setIsOpen={setIsChatbotOpen} />
     </div>
   );
 };
