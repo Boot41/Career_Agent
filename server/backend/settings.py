@@ -31,7 +31,7 @@ GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
 SECRET_KEY = 'django-insecure-_+w=(uz5mefsw&)$vjdjc9_1z-oekvxwh-c)o2e*07z3v9e+l_'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
+DEBUG = True
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
@@ -138,7 +138,16 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+# URL to serve static files
+STATIC_URL = '/static/'
+
+# Directory where Django looks for additional static files
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),  # Ensure this directory exists
+]
+
+# Directory where collectstatic will copy all static files
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # CORS settings
 CORS_ALLOW_ALL_ORIGINS = True

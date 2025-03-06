@@ -126,7 +126,7 @@ class SubmitAnswersView(View):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class GenerateQuestionsView(APIView):
-    """API view to generate feedback questions based on role and feedback type."""
+    """API view to generate feedback questions based on role and feedback perspective."""
     
     def post(self, request):
         """Generates feedback questions based on role and feedback perspective."""
@@ -216,6 +216,33 @@ class GenerateFeedbackView(APIView):
             traceback.print_exc()
             return Response({"error": f"API request failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
+    def _generate_prompt(self, role, feedback_receiver):
+        """Generates a structured AI prompt for feedback question generation based on SWOT analysis."""
+        receiver_guidance = self._get_feedback_receiver_guidance(feedback_receiver, role)
+
+        return f"""
+Generate 5 specific feedback questions for an employee in the {role} position.
+The feedback is being provided by a {feedback_receiver}.
+
+This feedback should be structured to support a SWOT analysis, focusing on:
+
+- Strengths: Identify key abilities, skills, and attributes that contribute positively to the employee's role.
+- Weaknesses: Highlight areas where the employee may need improvement or additional development.
+- Opportunities: Explore potential growth areas, training, or skills that can enhance the employee’s performance.
+- Threats: Identify challenges that may hinder the employee’s progress, including workplace dynamics or industry-related risks.
+
+{receiver_guidance}
+
+Important guidelines:
+- Questions should be specific to the employee being evaluated.
+- For Manager and Peer feedback, refer to "the employee" rather than using pronouns.
+- For Self-feedback, use "you" to address the employee directly.
+- Focus on observable behaviors and specific performance aspects.
+- Questions should be constructive, growth-oriented, and aligned with SWOT analysis.
+
+Return exactly 5 questions as a numbered list.
+"""
+
     def _fetch_questions_from_groq_direct(self, prompt):
         """Fetches feedback questions from Groq API using direct key."""
         # Hardcoded API key - this should be replaced with a proper environment variable in production
@@ -234,26 +261,6 @@ class GenerateFeedbackView(APIView):
         # Extract questions from response
         return [q.strip() for q in response.choices[0].message.content.strip().split("\n") if q.strip().endswith("?")][:5]
 
-    def _generate_prompt(self, role, feedback_receiver):
-        """Generates a structured AI prompt for feedback question generation."""
-        receiver_guidance = self._get_feedback_receiver_guidance(feedback_receiver, role)
-
-        return f"""
-Generate 5 specific feedback questions for an employee in the {role} position.
-The feedback is being provided by a {feedback_receiver}.
-
-{receiver_guidance}
-
-Important guidelines:
-- Questions should be specific to the employee being evaluated
-- For Manager and Peer feedback, refer to "the employee" rather than using pronouns
-- For Self feedback, use "you" to address the employee directly
-- Focus on observable behaviors and specific performance aspects
-- Questions should be constructive and growth-oriented
-
-Return exactly 5 questions as a numbered list.
-"""
-
     def _fallback_questions(self, role, feedback_receiver):
         """Returns predefined fallback questions if AI fails."""
         fallback = {
@@ -265,7 +272,7 @@ Return exactly 5 questions as a numbered list.
                 f"What professional development opportunities would benefit the employee in the {role} role?"
             ],
             'Peer': [
-                f"How effectively does the employee collaborate with the team as a {role}?",
+                f"How well does the employee collaborate with the team as a {role}?",
                 f"What strengths has the employee demonstrated in teamwork while performing as a {role}?",
                 f"How has the employee contributed to group projects in the {role} capacity?",
                 f"What specific feedback would help the employee improve performance as a {role}?",
