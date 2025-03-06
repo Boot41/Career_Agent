@@ -1,5 +1,6 @@
 from django.db import models
 import uuid
+import logging
 from apps.authentication.models import AuthUser
 from apps.organizations.models import Organization
 
@@ -47,6 +48,7 @@ class Feedback(models.Model):
         receiver = str(receiver)  # Make sure this is the ID, not the name
         organization_id = str(organization_id)
         
+        logging.info(f'Received questions: {questions}')
         feedback = cls(giver=giver, receiver=receiver, organization_id=organization_id,
                       feedback_type=feedback_type, questions=questions)
         feedback.save()

@@ -31,6 +31,7 @@ class CreateFeedbackView(View):
     def post(self, request):
         try:
             data = json.loads(request.body)
+            print(f'Received data: {data}')
             feedback = Feedback.create_feedback(
                 giver=data.get('giver'),
                 receiver=data.get('receiver'),
@@ -163,11 +164,11 @@ class GenerateQuestionsView(APIView):
             ]
         elif feedback_type == 'Self':
             return [
-                "What challenges have you faced in your current position?",
-                "What accomplishments are you most proud of in this review period?",
-                "What skills would you like to develop further to excel in your role?",
-                "How effectively have you managed your responsibilities and workload?",
-                "What strategies could you implement to improve your overall performance?"
+                "What specific skills or knowledge have you acquired in the past quarter that have significantly improved your performance in your role as a Self, and how do you plan to continue building on those strengths?",
+                "Which goals or objectives did you set for yourself at the beginning of the review period that you were unable to achieve, and what obstacles do you think hindered your progress towards those goals?",
+                "What are some common themes or patterns you've noticed in your workflow or habits that you think are holding you back from reaching your full potential as a Self, and what changes are you considering making to overcome those challenges?",
+                "Can you think of a recent project or task where you had to adapt quickly to changing circumstances or priorities? How did you handle that situation, and what did you learn from the experience?",
+                "Looking ahead to the next review period, what are the most important professional development goals you want to focus on, and what concrete steps do you plan to take to achieve those goals and continue growing as a Self?"
             ]
         else:
             return [
@@ -270,11 +271,11 @@ Return exactly 5 questions as a numbered list.
                 f"How well does the employee communicate with colleagues in the {role} position?"
             ],
             'Self': [
-                "What challenges have you faced in your current position?",
-                "What accomplishments are you most proud of in this review period?",
-                "What skills would you like to develop further to excel in your role?",
-                "How effectively have you managed your responsibilities and workload?",
-                "What strategies could you implement to improve your overall performance?"
+                "What specific skills or knowledge have you acquired in the past quarter that have significantly improved your performance in your role as a Self, and how do you plan to continue building on those strengths?",
+                "Which goals or objectives did you set for yourself at the beginning of the review period that you were unable to achieve, and what obstacles do you think hindered your progress towards those goals?",
+                "What are some common themes or patterns you've noticed in your workflow or habits that you think are holding you back from reaching your full potential as a Self, and what changes are you considering making to overcome those challenges?",
+                "Can you think of a recent project or task where you had to adapt quickly to changing circumstances or priorities? How did you handle that situation, and what did you learn from the experience?",
+                "Looking ahead to the next review period, what are the most important professional development goals you want to focus on, and what concrete steps do you plan to take to achieve those goals and continue growing as a Self?"
             ]
         }
         return fallback.get(feedback_receiver, [
@@ -530,11 +531,11 @@ class CreateFeedbackAPI(APIView):
             ]
         elif feedback_type == "Self":
             return [
-                "What do you consider to be your greatest strengths?",
-                "What areas do you think you need to improve in?",
-                "How well do you manage your time and prioritize tasks?",
-                "How effectively do you communicate with your team and manager?",
-                "What goals would you like to achieve in the next six months?"
+                "What specific skills or knowledge have you acquired in the past quarter that have significantly improved your performance in your role as a Self, and how do you plan to continue building on those strengths?",
+                "Which goals or objectives did you set for yourself at the beginning of the review period that you were unable to achieve, and what obstacles do you think hindered your progress towards those goals?",
+                "What are some common themes or patterns you've noticed in your workflow or habits that you think are holding you back from reaching your full potential as a Self, and what changes are you considering making to overcome those challenges?",
+                "Can you think of a recent project or task where you had to adapt quickly to changing circumstances or priorities? How did you handle that situation, and what did you learn from the experience?",
+                "Looking ahead to the next review period, what are the most important professional development goals you want to focus on, and what concrete steps do you plan to take to achieve those goals and continue growing as a Self?"
             ]
         else:
             return [
@@ -577,11 +578,11 @@ class CreateFeedbackAPI(APIView):
                 "How well does the employee communicate with colleagues?"
             ],
             "Self": [
-                "What challenges have you faced in your role?",
-                "What accomplishments are you most proud of?",
-                "What skills would you like to develop further to excel in your role?",
-                "How have you grown in your role over the past year?",
-                "What support do you need to enhance your performance?"
+                "What specific skills or knowledge have you acquired in the past quarter that have significantly improved your performance in your role as a Self, and how do you plan to continue building on those strengths?",
+                "Which goals or objectives did you set for yourself at the beginning of the review period that you were unable to achieve, and what obstacles do you think hindered your progress towards those goals?",
+                "What are some common themes or patterns you've noticed in your workflow or habits that you think are holding you back from reaching your full potential as a Self, and what changes are you considering making to overcome those challenges?",
+                "Can you think of a recent project or task where you had to adapt quickly to changing circumstances or priorities? How did you handle that situation, and what did you learn from the experience?",
+                "Looking ahead to the next review period, what are the most important professional development goals you want to focus on, and what concrete steps do you plan to take to achieve those goals and continue growing as a Self?"
             ]
         }
         return fallback.get(feedback_type, ["What are your strengths and weaknesses?"] * 5)

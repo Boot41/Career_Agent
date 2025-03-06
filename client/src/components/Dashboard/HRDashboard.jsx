@@ -653,7 +653,7 @@ const HRDashboard = () => {
           </h2>
 
           {/* Display selected employee for SWOT analysis */}
-          {selectedSwotEmployee && (
+          {/* {selectedSwotEmployee && (
             <div className="bg-green-50 p-4 rounded-md mb-6">
               <h3 className="text-lg font-semibold text-green-800 mb-2">Selected Employee for SWOT Analysis</h3>
               <div className="flex items-center justify-between">
@@ -683,9 +683,9 @@ const HRDashboard = () => {
                 </div>
               </div>
             </div>
-          )}
+          )} */}
 
-          {/* SWOT Analysis Results */}
+          {/* SWOT Analysis Results
           {swotData && (
             <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
               <h3 className="text-xl font-bold text-gray-800 mb-4">SWOT Analysis Results</h3>
@@ -717,38 +717,15 @@ const HRDashboard = () => {
                 <p className="text-gray-700 whitespace-pre-line">{swotData.summary}</p>
               </div>
             </div>
-          )}
+          )} */}
 
-          {/* Error Message */}
+          {/* Error Message
           {swotError && (
             <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg mb-6">
               <h4 className="font-bold mb-2">Error</h4>
               <p>{swotError}</p>
             </div>
-          )}
-
-          {/* Employee Selection */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Employee for SWOT Analysis
-            </label>
-            <select
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              value={swotEmployeeId || ''}
-              onChange={(e) => {
-                const selectedId = e.target.value;
-                console.log('Setting SWOT employee ID:', selectedId);
-                setSwotEmployeeId(selectedId);
-              }}
-            >
-              <option value="">Select an Employee</option>
-              {allPeople.map(person => (
-                <option key={person.id} value={person.id}>
-                  {person.displayName} - {person.email}
-                </option>
-              ))}
-            </select>
-          </div>
+          )} */}
 
           {/* List of People */}
           <div className="space-y-4">
