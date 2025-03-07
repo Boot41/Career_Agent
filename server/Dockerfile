@@ -9,7 +9,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of your project
 COPY . .
 
-EXPOSE 8000
+EXPOSE 8001
 
-# Run Gunicorn instead of Django's runserver
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "backend.wsgi:application"]
+CMD ["python3", "manage.py", "runserver"]

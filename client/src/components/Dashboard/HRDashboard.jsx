@@ -94,7 +94,7 @@ const HRDashboard = () => {
             }
 
             // Fetch organization hierarchy and details
-            const response = await axios.get('/org/hierarchy/', {
+            const response = await axios.get('http://localhost:8001/org/hierarchy/', {
               params: { organization_id: parsedUserData.organization_id }
             });
 

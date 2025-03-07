@@ -49,18 +49,42 @@ const ManagerDashboard = () => {
     }
 
     const fetchTeamMembers = async () => {
-      const userId = 'd46f5ded-f660-4e52-aa98-077278c33d7b'; // Use the actual user ID
       try {
-        const response = await fetch(`http://localhost:8001/feedback/managed-employees/?manager_id=${userId}`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        const storedUserData = localStorage.getItem('userData');
+        if (!storedUserData) {
+          console.error('No user data found in localStorage.');
+          return;
         }
+    
+        const userData = JSON.parse(storedUserData);
+        const userId = userData.id;
+    
+        if (!userId) {
+          console.error('User ID is missing in user data.');
+          return;
+        }
+    
+        console.log('Fetching team members for manager ID:', userId);
+    
+        const response = await fetch(`http://localhost:8001/feedback/managed-employees/?manager_id=${userId}`);
+    
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+    
         const data = await response.json();
-        setTeamMembers(data); // Assuming data is an array of team members
+        
+        if (!Array.isArray(data) || data.length === 0) {
+          console.warn('No team members found for this manager.');
+        }
+    
+        console.log('Fetched team members:', data);
+        setTeamMembers(data); // Update state with the team members
       } catch (error) {
         console.error('Error fetching team members:', error);
       }
     };
+    
 
     const fetchPendingFeedback = async () => {
       const userId = 'd46f5ded-f660-4e52-aa98-077278c33d7b';

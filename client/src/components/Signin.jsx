@@ -20,7 +20,7 @@ function Signin() {
     }
 
       // Make API call to backend login endpoint
-      const response = await axios.post('/auth/login/', {
+      const response = await axios.post('http://localhost:8001/auth/login/', {
         username,
         password
       });

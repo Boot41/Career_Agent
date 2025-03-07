@@ -18,6 +18,7 @@ from django.contrib.auth.models import User
 import re
 import dotenv
 import re
+import uuid
 
 # Load environment variables from .env file
 dotenv.load_dotenv()
@@ -53,6 +54,7 @@ class PendingFeedbackView(APIView):
 
         # Get user_id from query parameters
         user_id = request.query_params.get('user_id')
+        print(f"Querying pending feedback for user_id: {user_id}")
         if not user_id:
             return Response({"error": "user_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -64,6 +66,7 @@ class PendingFeedbackView(APIView):
             giver=user_id,
             is_submitted=False
         )
+        print(f"Pending feedback queryset: {pending_feedback}")
 
         # Get receiver names from AuthUser model
         feedback_data = []
@@ -486,8 +489,12 @@ class CreateFeedbackAPI(APIView):
         try:
             client = Groq(api_key=openai.api_key)
             response = client.chat.completions.create(
-                messages=[{"role": "user", "content": prompt}],
-                model="llama3-70b-8192"
+                messages=[{"role": "system", "content": 
+                     "You are an expert HR performance analyst. Based on employee feedback, generate a detailed SWOT analysis "
+                     "(Strengths, Weaknesses, Opportunities, and Threats) for this employee. Format the response in markdown-style "
+                     "headings: '## Summary', '## Strengths', '## Weaknesses', '## Opportunities', and '## Threats'."},
+                    {"role": "user", "content": prompt}
+                ]
             )
             return [q.strip() for q in response.choices[0].message.content.strip().split("\n") if q.endswith("?")][:5]
         except Exception as e:
