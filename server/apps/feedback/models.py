@@ -13,6 +13,7 @@ class ManagerEmployee(models.Model):
     class Meta:
         db_table = "manager_employee"
         unique_together = ('manager', 'employee')
+        app_label = 'feedback'
 
 
 class Feedback(models.Model):
