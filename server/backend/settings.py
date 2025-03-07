@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 from datetime import timedelta
 import dotenv
+import dj_database_url
 
 # Load environment variables from .env file
 dotenv.load_dotenv()
@@ -88,16 +89,12 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'djangoproject',
-        'USER': 'djangouser',
-        'PASSWORD': 'djangopassword',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
+    'default': dj_database_url.config(
+        default="postgresql://neondb_owner:npg_oKu9dsTqeQ3P@ep-hidden-cherry-a1vegjyg-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require",
+        conn_max_age=600,
+        ssl_require=True
+    )
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
