@@ -8,6 +8,7 @@ import Dashboard from './components/Dashboard'
 import HRDashboard from './components/Dashboard/HRDashboard'
 import EmployeeDashboard from './components/Dashboard/EmployeeDashboard'
 import ManagerDashboard from './components/Dashboard/ManagerDashboard'
+import NotFound from './components/NotFound'
 
 // Protected Route component to handle role-based access
 function ProtectedRoute({ children, requiredRole }) {
@@ -43,7 +44,7 @@ function App() {
     <Router>
       <div className="App">
         <Routes>
-          <Route path="/" element={<LandingPage />} />
+          <Route path="*" element={<LandingPage />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/signin" element={<Signin />} />
           <Route path="/create-organization" element={<CreateOrganization />} />
@@ -81,6 +82,7 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          {/* <Route path="*" element={<NotFound />} /> */}
         </Routes>
       </div>
     </Router>
