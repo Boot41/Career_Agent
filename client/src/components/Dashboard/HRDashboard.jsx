@@ -765,6 +765,8 @@ const HRDashboard = () => {
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
                   onClick={() => {
                     if (window.confirm('Are you sure you want to delete this SWOT analysis?')) {
+                      console.log('SWOT Object:', swot);
+                      console.log('SWOT ID:', swot.id); 
                       deleteSWOTAnalysis(swot.id, swot.receiver_id, swot.year);
                     }
                   }}
