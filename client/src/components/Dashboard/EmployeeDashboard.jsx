@@ -356,7 +356,7 @@ const EmployeeDashboard = () => {
               </div>
             </div>
           )}
-          {submittedFeedback.length > 0 ? (
+          {/* {submittedFeedback.length > 0 ? (
             <div className="bg-white rounded-lg shadow-md p-6 mt-6">
               <h3 className="text-lg font-medium text-gray-800 mb-4">
                 Submitted Feedback
@@ -377,7 +377,7 @@ const EmployeeDashboard = () => {
             </div>
           ) : (
             <p className="text-gray-600 mt-6">No submitted feedback found.</p>
-          )}
+          )} */}
           <button 
             className="fixed bottom-6 right-6 bg-indigo-600 text-white rounded-full p-4 hover:bg-indigo-700 transition"
             onClick={() => setIsChatbotOpen(!isChatbotOpen)}

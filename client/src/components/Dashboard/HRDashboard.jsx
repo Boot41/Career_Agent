@@ -55,7 +55,7 @@ const HRDashboard = () => {
   });
 
   // Feedback Generation State
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('hierarchy');
   const [selectedFeedbackEmployee, setSelectedFeedbackEmployee] = useState(null);
   const [generatedQuestions, setGeneratedQuestions] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -600,81 +600,6 @@ const deleteSWOTAnalysis = async (swotId) => {
             SWOT Analysis
           </h2>
 
-          {/* Display selected employee for SWOT analysis */}
-          {/* {selectedSwotEmployee && (
-            <div className="bg-green-50 p-4 rounded-md mb-6">
-              <h3 className="text-lg font-semibold text-green-800 mb-2">Selected Employee for SWOT Analysis</h3>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <UserCircle2 className="text-green-600 mr-3" size={36} />
-                  <div>
-                    <p className="font-medium">{selectedSwotEmployee.name}</p>
-                    <p className="text-sm text-gray-600">{selectedSwotEmployee.email}</p>
-                    <p className="text-xs text-gray-500">ID: {selectedSwotEmployee.id}</p>
-                  </div>
-                </div>
-                <div>
-                  <button 
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition mr-2"
-                    onClick={() => generateSWOTAnalysis(swotEmployeeId)}
-                    disabled={swotLoading}
-                  >
-                    {swotLoading ? (
-                      <>
-                        <Loader2 className="animate-spin inline mr-2" size={16} />
-                        Generating...
-                      </>
-                    ) : (
-                      'Generate SWOT Analysis'
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )} */}
-
-          {/* SWOT Analysis Results
-          {swotData && (
-            <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">SWOT Analysis Results</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-blue-50 p-4 rounded-md">
-                  <h4 className="font-bold text-blue-800 mb-2">Strengths</h4>
-                  <p className="text-gray-700 whitespace-pre-line">{swotData.strengths}</p>
-                </div>
-                
-                <div className="bg-red-50 p-4 rounded-md">
-                  <h4 className="font-bold text-red-800 mb-2">Weaknesses</h4>
-                  <p className="text-gray-700 whitespace-pre-line">{swotData.weaknesses}</p>
-                </div>
-                
-                <div className="bg-green-50 p-4 rounded-md">
-                  <h4 className="font-bold text-green-800 mb-2">Opportunities</h4>
-                  <p className="text-gray-700 whitespace-pre-line">{swotData.opportunities}</p>
-                </div>
-                
-                <div className="bg-yellow-50 p-4 rounded-md">
-                  <h4 className="font-bold text-yellow-800 mb-2">Threats</h4>
-                  <p className="text-gray-700 whitespace-pre-line">{swotData.threats}</p>
-                </div>
-              </div>
-              
-              <div className="mt-6">
-                <h4 className="font-bold text-gray-800 mb-2">Summary</h4>
-                <p className="text-gray-700 whitespace-pre-line">{swotData.summary}</p>
-              </div>
-            </div>
-          )} */}
-
-          {/* Error Message
-          {swotError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg mb-6">
-              <h4 className="font-bold mb-2">Error</h4>
-              <p>{swotError}</p>
-            </div>
-          )} */}
-
           {/* List of People */}
           <div className="space-y-4">
             {allPeople.map(person => (
@@ -804,16 +729,6 @@ const deleteSWOTAnalysis = async (swotId) => {
               <div className="mb-6 border-b border-gray-200">
                 <nav className="-mb-px flex space-x-8">
                   <button
-                    onClick={() => setActiveTab('overview')}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'overview' 
-                        ? 'border-indigo-500 text-indigo-600' 
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    Overview
-                  </button>
-                  <button
                     onClick={() => setActiveTab('hierarchy')}
                     className={`py-4 px-1 border-b-2 font-medium text-sm ${
                       activeTab === 'hierarchy' 
@@ -847,70 +762,7 @@ const deleteSWOTAnalysis = async (swotId) => {
               </div>
 
               {/* Content based on active tab */}
-              {activeTab === 'overview' ? (
-                selectedEmployee ? (
-                  <div className="bg-white shadow-md rounded-lg p-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-2xl font-bold text-gray-800 flex items-center">
-                        <Users className="mr-3 text-indigo-600" /> 
-                        Employee Profile
-                      </h2>
-                    </div>
-                    
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-700 mb-2">Personal Information</h3>
-                        <div className="space-y-2">
-                          <p><strong>Name:</strong> {selectedEmployee.name}</p>
-                          <p><strong>Department:</strong> {selectedEmployee.department}</p>
-                          <p><strong>Current Role:</strong> {selectedEmployee.role}</p>
-                          <p><strong>Email:</strong> {selectedEmployee.email}</p>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-700 mb-2">Performance Snapshot</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="bg-indigo-50 p-3 rounded-md text-center">
-                            <TrendingUp className="mx-auto mb-2 text-indigo-600" />
-                            <div className="font-bold text-indigo-700">85%</div>
-                            <div className="text-xs text-gray-600">Feedback Completion</div>
-                          </div>
-                          <div className="bg-green-50 p-3 rounded-md text-center">
-                            <Star className="mx-auto mb-2 text-green-600" />
-                            <div className="font-bold text-green-700">4.2/5</div>
-                            <div className="text-xs text-gray-600">Performance Rating</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-white shadow-md rounded-lg p-6">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-                      <Users className="mr-3 text-indigo-600" /> 
-                      Employee Overview
-                    </h2>
-                    <div className="grid md:grid-cols-3 gap-6">
-                      <div className="bg-indigo-50 p-4 rounded-md">
-                        <Users className="text-indigo-600 mb-2" />
-                        <div className="font-bold text-xl text-indigo-800">{employees.length}</div>
-                        <div className="text-sm text-gray-600">Total Employees</div>
-                      </div>
-                      <div className="bg-green-50 p-4 rounded-md">
-                        <UserPlus className="text-green-600 mb-2" />
-                        <div className="font-bold text-xl text-green-800">{pendingInvitations.length}</div>
-                        <div className="text-sm text-gray-600">Pending Invitations</div>
-                      </div>
-                      <div className="bg-yellow-50 p-4 rounded-md">
-                        <MessageSquareText className="text-yellow-600 mb-2" />
-                        <div className="font-bold text-xl text-yellow-800">42</div>
-                        <div className="text-sm text-gray-600">Feedback Requests</div>
-                      </div>
-                    </div>
-                  </div>
-                )
-              ) : activeTab === 'hierarchy' ? (
+              {activeTab === 'hierarchy' ? (
                 isLoading ? (
                   <div className="flex justify-center items-center h-full">
                     <Loader2 className="animate-spin text-indigo-600" size={48} />

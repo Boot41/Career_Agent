@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useNavigate as useHistory } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   FileText, 
@@ -24,6 +24,7 @@ const Sidebar = ({ userType, onToggleView }) => {
   const [activeMenu, setActiveMenu] = useState('dashboard');
   const location = useLocation();
   const navigate = useNavigate();
+  const history = useHistory();
 
   useEffect(() => {
     // Determine active menu based on current path
@@ -95,7 +96,7 @@ const Sidebar = ({ userType, onToggleView }) => {
   const handleLogout = () => {
     // Implement logout logic
     localStorage.removeItem('token');
-    window.location.href = '/login';
+    navigate('*');
   };
 
   const navItems = getNavItems();
