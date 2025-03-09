@@ -313,29 +313,27 @@ const HRDashboard = () => {
     }
   };
 
-  // Function to delete a SWOT analysis
-  const deleteSWOTAnalysis = async (swotId, userId, year) => {
+// Function to delete a SWOT analysis
+const deleteSWOTAnalysis = async (swotId) => {
+  if (window.confirm("Are you sure you want to delete this SWOT analysis?")) {
     try {
-      const response = await axios.post('http://localhost:8001/feedback/delete-swot/', {
-        user_id: userId,
-        year: year
+      const response = await axios.delete("http://localhost:8001/feedback/delete-swot/", {
+        data: { swot_id: swotId },  // Send swotId as is (string)
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
-      
-      if (response.status === 200) {
-        // Remove the deleted SWOT analysis from the state
-        setSwotData(prevData => prevData.filter(swot => swot.id !== swotId));
-        alert('SWOT analysis deleted successfully');
-        
-        // Close the modal if no SWOT analyses remain
-        if (swotData.length === 1) {
-          setIsSwotModalOpen(false);
-        }
-      }
+
+      console.log("Delete Response:", response.data);
+      alert("SWOT analysis deleted successfully!");
+      // Refresh or update the UI after deletion
     } catch (error) {
-      console.error('Error deleting SWOT analysis:', error);
-      alert('Failed to delete SWOT analysis. Please try again.');
+      console.error("Error deleting SWOT analysis:", error.response?.data || error.message);
+      alert("Error deleting SWOT analysis.");
     }
-  };
+  }
+};
+
 
   // Organization Hierarchy Rendering
   const renderOrganizationHierarchy = () => {
@@ -767,7 +765,7 @@ const HRDashboard = () => {
                     if (window.confirm('Are you sure you want to delete this SWOT analysis?')) {
                       console.log('SWOT Object:', swot);
                       console.log('SWOT ID:', swot.id); 
-                      deleteSWOTAnalysis(swot.id, swot.receiver_id, swot.year);
+                      deleteSWOTAnalysis(swot.id);
                     }
                   }}
                 >

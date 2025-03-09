@@ -727,46 +727,27 @@ class SwotAnalysisView(APIView):
 
         return swot_data
 
+@method_decorator(csrf_exempt, name='dispatch')  # Disable CSRF for DELETE
 class DeleteSwotAnalysisView(APIView):
-    """API view to delete a SWOT analysis for a user."""
-    
+    """API view to delete a specific SWOT analysis by its ID."""
+
     def delete(self, request):
-        """Deletes a SWOT analysis for a user."""
-        user_id = request.GET.get('user_id')
-        year = request.GET.get('year', datetime.datetime.now().year)
-        
-        print(f"Delete SWOT Analysis requested for user_id: {user_id}, year: {year}")
-        
-        if not user_id:
-            return Response({"error": "User ID is required"}, status=status.HTTP_400_BAD_REQUEST)
-            
+        """Deletes a SWOT analysis based on its ID."""
+        swot_id = request.data.get("swot_id")  # Get from request body
+
+        if not swot_id:
+            return Response({"error": "SWOT ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
-            # Convert year to integer
-            year = int(year)
-        except ValueError:
-            return Response({"error": "Year must be a valid integer"}, status=status.HTTP_400_BAD_REQUEST)
-            
-        try:
-            # Get the user object
-            try:
-                user = AuthUser.objects.get(id=user_id)
-                print(f"Found user: {user.name} (ID: {user.id})")
-            except AuthUser.DoesNotExist:
-                print(f"User with ID {user_id} not found")
-                return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-                
-            # Delete all SWOT analyses for this user and year
-            deleted_count, _ = SwotAnalysis.objects.filter(receiver=user, year=year).delete()
-            
-            if deleted_count > 0:
-                print(f"Deleted {deleted_count} SWOT analyses for user {user.id} and year {year}")
-                return Response({"message": f"Successfully deleted {deleted_count} SWOT analyses"}, status=status.HTTP_200_OK)
-            else:
-                print(f"No SWOT analyses found for user {user.id} and year {year}")
-                return Response({"message": "No SWOT analyses found to delete"}, status=status.HTTP_404_NOT_FOUND)
-                
+            # Find and delete the SWOT analysis using the string ID
+            swot = SwotAnalysis.objects.get(id=swot_id)
+            swot.delete()
+            return Response({"message": f"Successfully deleted SWOT analysis with ID {swot_id}"}, status=status.HTTP_200_OK)
+
+        except SwotAnalysis.DoesNotExist:
+            return Response({"error": "SWOT analysis not found"}, status=status.HTTP_404_NOT_FOUND)
+
         except Exception as e:
-            print(f"Error deleting SWOT analysis: {str(e)}")
             return Response({"error": f"Error deleting SWOT analysis: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class SwotAnalysisAvailabilityView(APIView):
