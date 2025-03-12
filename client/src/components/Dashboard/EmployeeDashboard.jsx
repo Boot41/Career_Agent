@@ -5,6 +5,7 @@ import { MessageSquareText, FileText, Send, TrendingUp } from 'lucide-react';
 import axios from 'axios';
 import Modal from 'react-modal';
 import Chatbot from './Chatbot'; // Import the Chatbot component
+import VoiceFeedbackForm from './VoiceFeedbackForm';
 
 const EmployeeDashboard = () => {
   const [userData, setUserData] = useState(null);
@@ -70,59 +71,48 @@ const EmployeeDashboard = () => {
   /**
    * Submit feedback for the employee
    */
-  const handleSubmit = async () => {
-    const feedbackId = selectedFeedback.id; // Get the selected feedback ID
-    const answers = responses; // Use the responses state for answers
-
-    // Log the feedback ID and answers
-    console.log('Submitting Feedback ID:', feedbackId);
-    console.log('Answers:', answers);
-
-    // Validate data before sending
+  const handleSubmit = async (feedbackId, answers) => {
+    console.log("Submitting Feedback ID:", feedbackId);
+    console.log("Answers:", answers);
+  
+    // Validate input
     if (!feedbackId) {
-      console.error('Error: No feedback ID provided');
+      console.error("Error: No feedback ID provided");
       return;
     }
-
     if (!answers || Object.keys(answers).length === 0) {
-      console.error('Error: No answers provided');
+      console.error("Error: No answers provided");
       return;
     }
-
+  
     try {
       const response = await fetch(`http://localhost:8001/feedback/submit-answers/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           feedback_id: feedbackId,
-          answers: answers
+          answers: answers,
         }),
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        console.error('Server error details:', errorData);
+        console.error("Server error details:", errorData);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
-      // Handle the response
+  
       const result = await response.json();
-      console.log('Feedback submitted successfully:', result);
-      
-      // Update UI state
+      console.log("Feedback submitted successfully:", result);
+  
       setSubmitted(true);
-      
-      // Remove the submitted feedback from the pending list
-      setPendingFeedback(prevFeedback => 
-        prevFeedback.filter(feedback => feedback.id !== feedbackId)
+      setPendingFeedback((prevFeedback) =>
+        prevFeedback.filter((feedback) => feedback.id !== feedbackId)
       );
     } catch (error) {
-      console.error('Error submitting feedback:', error);
+      console.error("Error submitting feedback:", error);
     }
   };
-
+  
   const handleFormSubmit = () => {
     handleSubmit();
     setIsFormOpen(false);
@@ -327,34 +317,12 @@ const EmployeeDashboard = () => {
           ) : (
             <p>No pending feedback requests.</p>
           )}
-          {isFormOpen && selectedFeedback && (
-            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-              <div className="bg-white rounded-lg p-6">
-                <h3 className="text-lg font-medium text-gray-800 mb-4">Questions for {selectedFeedback.receiver_name}</h3>
-                {selectedFeedback.questions.map((question, index) => (
-                  <div key={index} className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {index + 1}. {question}
-                    </label>
-                    <textarea
-                      value={responses[`${selectedFeedback.id}-${index}`] || ''}
-                      onChange={(e) => setResponses(prev => ({ ...prev, [`${selectedFeedback.id}-${index}`]: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[100px]"
-                      placeholder="Provide your feedback here..."
-                    />
-                  </div>
-                ))}
-                <div className="flex justify-end">
-                  <button onClick={handleFormSubmit} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                    <Send size={18} />
-                    <span>Submit Feedback</span>
-                  </button>
-                  <button onClick={() => setIsFormOpen(false)} className="ml-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100">
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
+           {isFormOpen && selectedFeedback && (
+            <VoiceFeedbackForm 
+              selectedFeedback={selectedFeedback} 
+              setIsFormOpen={setIsFormOpen} 
+              handleFormSubmit={handleSubmit} 
+            />
           )}
           {/* {submittedFeedback.length > 0 ? (
             <div className="bg-white rounded-lg shadow-md p-6 mt-6">
