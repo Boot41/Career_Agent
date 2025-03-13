@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+    import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import axios from 'axios';
@@ -7,10 +7,12 @@ import VoiceFeedbackForm from './VoiceFeedbackForm';
 const HRFeedback = () => {
     const [pendingFeedback, setPendingFeedback] = useState([]);
     const [hierarchicalPendingFeedback, setHierarchicalPendingFeedback] = useState([]);
-    const [submittedFeedback, setSubmittedFeedback] = useState([]);
+    const [hierarchicalSubmittedFeedback, setHierarchicalSubmittedFeedback] = useState([]);
     const [activeTab, setActiveTab] = useState('pendingRequests'); // Default: Pending Feedback
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedFeedback, setSelectedFeedback] = useState(null);
+    const [expandedFeedback, setExpandedFeedback] = useState({});
+    const [checkedFeedbacks, setCheckedFeedbacks] = useState({});
 
     // Retrieve user data from local storage
     const userData = JSON.parse(localStorage.getItem('userData'));
@@ -20,7 +22,7 @@ const HRFeedback = () => {
     const organization_Id = userData?.organization_id || null;
 
     useEffect(() => {
-        // if (!userId) return;
+        if (!userId) return;
 
         const fetchPendingFeedback = async () => {
             try {
@@ -33,9 +35,8 @@ const HRFeedback = () => {
 
         const fetchHierarchicalPendingFeedback = async () => {
             try {
-                const organizationId = organization_Id;
                 const response = await axios.get(`http://localhost:8001/feedback/get-pending-feedbacks/`, {
-                    params: { organization_id: organizationId },
+                    params: { organization_id: organization_Id },
                 });
 
                 console.log("API Response:", response.data);
@@ -45,20 +46,23 @@ const HRFeedback = () => {
             }
         };
 
-        const fetchSubmittedFeedback = async () => {
+        const fetchHierarchicalSubmittedFeedback = async () => {
             try {
-                const response = await axios.get(`http://localhost:8001/feedback/submitted-feedback/?user_id=${userId}`);
-                setSubmittedFeedback(response.data || []);
+                const response = await axios.get(`http://localhost:8001/feedback/get-submitted-feedbacks/`, {
+                    params: { organization_id: organization_Id }
+                });
+
+                console.log("Submitted Feedback (Hierarchical):", response.data.submitted_feedbacks);
+                setHierarchicalSubmittedFeedback(response.data.submitted_feedbacks || []);
             } catch (error) {
-                console.error('Error fetching submitted feedback:', error);
+                console.error("Error fetching hierarchical submitted feedback:", error);
             }
         };
 
         fetchPendingFeedback();
         fetchHierarchicalPendingFeedback();
-        fetchSubmittedFeedback();
+        fetchHierarchicalSubmittedFeedback();
     }, [userId]);
-    console.log(hierarchicalPendingFeedback)
 
     // Handle feedback form opening
     const handlePendingFeedback = (feedback) => {
@@ -68,6 +72,20 @@ const HRFeedback = () => {
 
     const handleSubmit = () => {
         setIsFormOpen(false);
+    };
+
+    const toggleFeedbackDetails = (receiverName) => {
+        setExpandedFeedback((prevExpandedFeedback) => ({
+            ...prevExpandedFeedback,
+            [receiverName]: !prevExpandedFeedback[receiverName],
+        }));
+    };
+
+    const handleCheckboxChange = (key) => {
+        setCheckedFeedbacks((prevCheckedFeedbacks) => ({
+            ...prevCheckedFeedbacks,
+            [key]: !prevCheckedFeedbacks[key],
+        }));
     };
 
     return (
@@ -100,8 +118,8 @@ const HRFeedback = () => {
                         </button>
                     </div>
 
-                    {/* Conditional Rendering for Tabs */}
-                    {activeTab === 'pendingRequests' ? (
+                    {/* Pending Feedback */}
+                    {activeTab === 'pendingRequests' && (
                         <div className="bg-white shadow-md rounded-lg p-6 mb-6">
                             <h2 className="text-2xl font-bold text-gray-800 mb-4">Your Pending Feedback</h2>
                             {pendingFeedback.length > 0 ? (
@@ -112,9 +130,7 @@ const HRFeedback = () => {
                                         onClick={() => handlePendingFeedback(request)}
                                     >
                                         <div className="flex justify-between items-center mb-4">
-                                            <div>
-                                                <h4 className="font-medium text-gray-800">Feedback for: {request.receiver_name}</h4>
-                                            </div>
+                                            <h4 className="font-medium text-gray-800">Feedback for: {request.receiver_name}</h4>
                                             <span className="text-sm text-gray-500">Created: {new Date(request.created_at).toLocaleDateString()}</span>
                                         </div>
                                     </button>
@@ -123,7 +139,10 @@ const HRFeedback = () => {
                                 <p className="text-gray-500">No pending feedback available.</p>
                             )}
                         </div>
-                    ) : activeTab === 'otherFeedbacks' ? (
+                    )}
+
+                    {/* Other's Feedback */}
+                    {activeTab === 'otherFeedbacks' && (
                         <div className="bg-white shadow-md rounded-lg p-6">
                             <h2 className="text-2xl font-bold text-gray-800 mb-4">Other's Pending Feedback</h2>
                             {hierarchicalPendingFeedback.length > 0 ? (
@@ -137,18 +156,54 @@ const HRFeedback = () => {
                                 <p className="text-gray-500">No hierarchical pending feedback available.</p>
                             )}
                         </div>
-                    ) : (
+                    )}
+
+                    {/* Submitted Feedback */}
+                    {activeTab === 'submitted' && (
                         <div className="bg-white shadow-md rounded-lg p-6">
                             <h2 className="text-2xl font-bold text-gray-800 mb-4">Submitted Feedback</h2>
-                            {submittedFeedback.length > 0 ? (
-                                <ul className="space-y-2">
-                                    {submittedFeedback.map((feedback) => (
-                                        <li key={feedback.id} className="p-4 border border-gray-200 rounded-md">
-                                            <p className="font-medium text-gray-800">{feedback.question}</p>
-                                            <p className="text-sm text-gray-500">Submitted on: {new Date(feedback.submittedDate).toLocaleDateString()}</p>
-                                        </li>
+
+                            {hierarchicalSubmittedFeedback.length > 0 ? (
+                                <div className="space-y-4">
+                                    {hierarchicalSubmittedFeedback.map((receiver) => (
+                                        <div key={receiver.receiver_name} className="p-4 border border-gray-300 rounded-lg bg-white shadow-sm">
+                                            <div className="flex justify-between items-center cursor-pointer" onClick={() => toggleFeedbackDetails(receiver.receiver_name)}>
+                                                <h3 className="text-lg font-semibold text-gray-800">Receiver: {receiver.receiver_name}</h3>
+                                                <span className="text-indigo-600">{expandedFeedback[receiver.receiver_name] ? "▲" : "▼"}</span>
+                                            </div>
+                                            {expandedFeedback[receiver.receiver_name] && (
+                                                <ul className="mt-2 space-y-2">
+                                                    {receiver.feedbacks.map((feedback, index) => (
+                                                        <li key={index} className="p-3 bg-gray-50 rounded-md border">
+                                                            <div className="flex justify-between items-center">
+                                                                <p className="text-sm text-gray-600">Giver: {feedback.giver_name}</p>
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className="form-checkbox h-4 w-4 text-indigo-600"
+                                                                    checked={checkedFeedbacks[receiver.receiver_name] || false}
+                                                                    onChange={() => handleCheckboxChange(receiver.receiver_name)}
+                                                                />
+                                                            </div>
+                                                            <div className="mt-2">
+                                                                {feedback.answers && Object.keys(feedback.answers).length > 0 ? (
+                                                                    <ul className="list-disc pl-5 text-sm text-gray-800">
+                                                                        {Object.values(feedback.answers).map((answer, idx) => (
+                                                                            <li key={idx} className="flex items-center space-x-2">
+                                                                                <span>{answer}</span>
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                ) : (
+                                                                    <p className="text-sm text-gray-500">No Answers Provided</p>
+                                                                )}
+                                                            </div>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </div>
                                     ))}
-                                </ul>
+                                </div>
                             ) : (
                                 <p className="text-gray-500">No submitted feedback available.</p>
                             )}

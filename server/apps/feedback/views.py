@@ -830,3 +830,39 @@ def get_pending_feedbacks(request):
 
     except Exception as e:
         return Response({"error": str(e)}, status=500)
+
+def get_hierarchical_submitted_feedback(request):
+    organization_id = request.GET.get('organization_id')
+
+    if not organization_id:
+        return JsonResponse({"error": "Organization ID is required"}, status=400)
+
+    # Fetch all submitted feedback for the given organization
+    submitted_feedbacks = Feedback.objects.filter(
+        organization_id=organization_id, 
+        is_submitted=True
+    ).values("receiver", "giver", "answers")
+
+    # Group feedback by receiver
+    feedback_dict = {}
+
+    for feedback in submitted_feedbacks:
+        receiver_id = feedback["receiver"]  
+        giver_id = feedback["giver"]
+        answers = feedback["answers"] if feedback["answers"] else []
+
+        receiver_name = get_user_name(receiver_id)
+        giver_name = get_user_name(giver_id)
+
+        if receiver_name not in feedback_dict:
+            feedback_dict[receiver_name] = {
+                "receiver_name": receiver_name,
+                "feedbacks": []
+            }
+
+        feedback_dict[receiver_name]["feedbacks"].append({
+            "giver_name": giver_name,
+            "answers": answers
+        })
+
+    return JsonResponse({"submitted_feedbacks": list(feedback_dict.values())}, safe=False)  
