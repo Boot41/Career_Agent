@@ -9,6 +9,7 @@ import HRDashboard from './components/Dashboard/HRDashboard'
 import EmployeeDashboard from './components/Dashboard/EmployeeDashboard'
 import ManagerDashboard from './components/Dashboard/ManagerDashboard'
 import NotFound from './components/NotFound'
+import HRFeedback from './components/Dashboard/HRFeedback'
 
 // Protected Route component to handle role-based access
 function ProtectedRoute({ children, requiredRole }) {
@@ -48,6 +49,7 @@ function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/signin" element={<Signin />} />
           <Route path="/create-organization" element={<CreateOrganization />} />
+          <Route path="/dashboard/hr/feedback" element={<HRFeedback />} />
           
           {/* Role-based protected routes */}
           <Route 
@@ -61,9 +63,9 @@ function App() {
           <Route 
             path="/dashboard/hr" 
             element={
-              <ProtectedRoute requiredRole="HR">
+              // <ProtectedRoute requiredRole="HR">
                 <HRDashboard />
-              </ProtectedRoute>
+              /* </ProtectedRoute> */
             } 
           />
           <Route 
@@ -77,9 +79,9 @@ function App() {
           <Route 
             path="/dashboard/manager" 
             element={
-              <ProtectedRoute requiredRole="Manager">
+              // <ProtectedRoute requiredRole="Manager">
                 <ManagerDashboard />
-              </ProtectedRoute>
+              // </ProtectedRoute>
             } 
           />
           {/* <Route path="*" element={<NotFound />} /> */}

@@ -57,7 +57,8 @@ function Signin() {
           role: userData.role,
           name: userData.name,
           email: userData.email,
-          organization_id: userData.organization_id
+          organization_id: userData.organization_id,
+          organization_name: userData.organization_name
         }));
 
         // Navigate based on user role

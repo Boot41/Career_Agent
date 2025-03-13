@@ -71,10 +71,10 @@ class ChatbotView(APIView):
             # Placeholder: Replace with actual database query or API call to retrieve SWOT analysis
             swot_analysis = {
                 "strengths": ["Strong communication skills", "Team player"],
-                "weaknesses": ["Public speaking", "Time management"],
+                "weaknesses": ["Poor communication skills", "Unresponsive"],
                 "opportunities": ["Training programs", "Mentorship"],
                 "threats": ["High competition", "Market changes"]
-            }
+            }   
             return swot_analysis
         except Exception as e:
             logger.error(f"Error fetching SWOT analysis for user {user_id}: {str(e)}", exc_info=True)

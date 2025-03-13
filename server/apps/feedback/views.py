@@ -19,6 +19,7 @@ import re
 import dotenv
 import re
 import uuid
+from rest_framework.decorators import api_view
 
 # Load environment variables from .env file
 dotenv.load_dotenv()
@@ -787,3 +788,45 @@ class SwotAnalysisAvailabilityView(APIView):
 
         except Exception as e:
             return Response({"error": f"Error retrieving SWOT analyses: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+def get_user_name(user_id):
+    """Fetch the name from AuthUser based on user ID."""
+    try:
+        user = AuthUser.objects.get(id=user_id)
+        return user.name  # Since your model only has 'name'
+    except AuthUser.DoesNotExist:
+        return "Unknown"
+
+@api_view(['GET'])
+def get_pending_feedbacks(request):
+    """
+    Fetch all pending feedbacks for a given organization with employee names.
+    """
+    try:
+        organization_id = request.query_params.get("organization_id")  # Extract org ID correctly
+
+        if not organization_id:
+            return Response({"error": "organization_id is required"}, status=400)
+
+        # Fetch only pending feedbacks (not yet submitted) for the given organization
+        pending_feedbacks = Feedback.objects.filter(is_submitted=False, organization_id=organization_id)
+
+        feedback_list = []
+        for feedback in pending_feedbacks:
+            giver_name = get_user_name(feedback.giver)  # Fetch giver name
+            receiver_name = get_user_name(feedback.receiver)  # Fetch receiver name
+
+            feedback_list.append({
+                "id": feedback.id,
+                "giver_id": feedback.giver,
+                "giver_name": giver_name,
+                "receiver_id": feedback.receiver,
+                "receiver_name": receiver_name,
+                "questions": feedback.questions,
+                "created_at": feedback.created_at,
+            })
+
+        return Response({"pending_feedbacks": feedback_list})
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)

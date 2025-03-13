@@ -17,9 +17,9 @@ const FeedbackGenerator = ({ handleGenerateQuestions, onRoleChange }) => {
     const newRole = e.target.value;
     setRole(newRole);
     // Pass role change to parent component
-    if (onRoleChange) {
-      onRoleChange(newRole);
-    }
+    // if (onRoleChange) {
+    //   onRoleChange(newRole);
+    // }
   };
 
   // Function to generate feedback questions

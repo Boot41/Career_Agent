@@ -8,7 +8,8 @@ from .views import (
     ManagedEmployeesView,
     SwotAnalysisView,
     DeleteSwotAnalysisView,
-    SwotAnalysisAvailabilityView
+    SwotAnalysisAvailabilityView,
+    get_pending_feedbacks
 )
 
 urlpatterns = [
@@ -21,7 +22,9 @@ urlpatterns = [
     path('generate/', SwotAnalysisView.as_view(), name='generate_swot'),
     path('delete-swot/', DeleteSwotAnalysisView.as_view(), name='delete_swot'),
     path('swot-analysis/availability/', SwotAnalysisAvailabilityView.as_view(), name='swot-availability'),
+    path('get-pending-feedbacks/', get_pending_feedbacks, name='get_pending_feedback_hierarchy'),
     # Legacy endpoints for backward compatibility
     path('generate-ai-feedback/', GenerateFeedbackView.as_view(), name='generate_ai_feedback'),
     path('api/create-feedback/', CreateFeedbackAPI.as_view(), name='api_create_feedback'),
+    
 ]

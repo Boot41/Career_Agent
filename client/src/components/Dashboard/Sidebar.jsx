@@ -27,12 +27,11 @@ const Sidebar = ({ userType, onToggleView }) => {
   const history = useHistory();
 
   useEffect(() => {
-    // Determine active menu based on current path
     const path = location.pathname;
-    if (path.includes('/dashboard')) setActiveMenu('dashboard');
-    else if (path.includes('/feedback')) setActiveMenu('feedback');
-    else if (path.includes('/performance')) setActiveMenu('performance');
-    else if (path.includes('/team')) setActiveMenu('team');
+    if (path === '/dashboard' || path === '/') setActiveMenu('dashboard');
+    else if (path.startsWith('/dashboard/hr/feedback')) setActiveMenu('feedback');  // Exact match for HR feedback
+    else if (path.startsWith('/performance')) setActiveMenu('performance');
+    else if (path.startsWith('/team')) setActiveMenu('team');
   }, [location]);
 
   // Navigation items based on user type
@@ -43,12 +42,6 @@ const Sidebar = ({ userType, onToggleView }) => {
         label: 'Dashboard',
         path: '/dashboard',
         key: 'dashboard'
-      },
-      {
-        icon: FileText,
-        label: 'Feedback',
-        path: '/feedback',
-        key: 'feedback'
       }
     ];
 
@@ -65,6 +58,12 @@ const Sidebar = ({ userType, onToggleView }) => {
     const hrItems = [
       ...commonItems,
       {
+        icon: FileText,
+        label: 'Feedback',
+        path: '/dashboard/hr/feedback',
+        key: 'feedback'
+      },
+      {
         icon: Users,
         label: 'Team',
         path: '/team',
@@ -80,22 +79,27 @@ const Sidebar = ({ userType, onToggleView }) => {
 
     return navMap[userType] || commonItems;
   };
-
   const handleNavigation = (item) => {
     setActiveMenu(item.key);
     
-    // Special handling for feedback toggle if on dashboard
-    if (item.key === 'feedback' && activeMenu === 'dashboard' && onToggleView) {
-      onToggleView();
-      return; // Don't navigate away from dashboard
+    // Navigate to the appropriate dashboard based on user type
+    if (item.key === 'dashboard') {
+      if (userType === 'hr') {
+        navigate('/dashboard/hr'); // Redirect to HR dashboard
+      } else if (userType === 'employee') {
+        navigate('/dashboard/employee'); // Redirect to Employee dashboard
+      } else if (userType === 'manager') {
+        navigate('/dashboard/manager'); // Redirect to Manager dashboard
+      }
+      return; // Exit after navigation
     }
-    
+  
+    // For other navigation items
     navigate(item.path);
   };
-
   const handleLogout = () => {
     // Implement logout logic
-    localStorage.removeItem('token');
+    // localStorage.removeItem('token');
     navigate('*');
   };
 

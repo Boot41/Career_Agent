@@ -60,7 +60,8 @@ const HRDashboard = () => {
   const [generatedQuestions, setGeneratedQuestions] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [id, setId] = useState(null);
-  const [selectedRole, setSelectedRole] = useState("");  // Add role state
+  const [selectedRole, setSelectedRole] = useState("Manager");  // Add role state
+  // console.log(selectedRole )
   // New state variable for SWOT analysis employee ID
   const [swotEmployeeId, setSwotEmployeeId] = useState(null);
   const [swotLoading, setSwotLoading] = useState(false);
@@ -72,7 +73,7 @@ const HRDashboard = () => {
   useEffect(() => {
     console.log('Selected Role State:', selectedRole);
   }, [selectedRole]);
-
+  // console.log('Stored User Data:', JSON.parse(localStorage.getItem('userData')));
   // Fetch Organization Hierarchy and User Data
   useEffect(() => {
     const storedUserData = localStorage.getItem('userData');
@@ -112,7 +113,7 @@ const HRDashboard = () => {
             setError('No user data found. Please log in again.');
           }
         } else {
-          setError('No user data found. Please log in again.');
+          setError('No user data found. Please log in again.'); 
         }
       } catch (err) {
         console.error('Error fetching organization hierarchy:', err);
@@ -325,7 +326,7 @@ const deleteSWOTAnalysis = async (swotId) => {
       });
 
       console.log("Delete Response:", response.data);
-      alert("SWOT analysis deleted successfully!");
+      alert("SWOT analysis deleted successfully!"); 
       // Refresh or update the UI after deletion
     } catch (error) {
       console.error("Error deleting SWOT analysis:", error.response?.data || error.message);
