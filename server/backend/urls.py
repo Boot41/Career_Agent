@@ -23,4 +23,5 @@ urlpatterns = [
     path('org/', include('apps.organizations.urls')),
     path('feedback/', include('apps.feedback.urls')),  # Add feedback app URLs
     path("chatbot/", include("apps.chatbot.url")),
+    path("livekit/", include("apps.livekit.urls")),
 ]

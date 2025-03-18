@@ -847,6 +847,7 @@ def get_hierarchical_submitted_feedback(request):
     feedback_dict = {}
 
     for feedback in submitted_feedbacks:
+        # feedback_id = feedback["id"]
         receiver_id = feedback["receiver"]  
         giver_id = feedback["giver"]
         answers = feedback["answers"] if feedback["answers"] else []
@@ -861,6 +862,7 @@ def get_hierarchical_submitted_feedback(request):
             }
 
         feedback_dict[receiver_name]["feedbacks"].append({
+            # "feedback_id": feedback_id,
             "giver_name": giver_name,
             "answers": answers
         })

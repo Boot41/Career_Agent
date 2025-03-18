@@ -10,10 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@deepgram/sdk": "^3.11.2",
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
+    "@livekit/components-react": "^2.8.1",
+    "@livekit/components-styles": "^1.1.4",
     "axios": "^1.8.1",
-    "livekit-client": "^2.9.6",
+    "livekit-client": "^2.9.7",
     "lucide-react": "^0.477.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -21,7 +24,8 @@
     "react-modal": "^3.16.3",
     "react-router-dom": "^7.2.0",
     "react-speech-recognition": "^3.10.0",
-    "react-table": "^7.8.0"
+    "react-table": "^7.8.0",
+    "recordrtc": "^5.6.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",

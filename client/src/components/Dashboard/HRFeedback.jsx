@@ -1,4 +1,4 @@
-    import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import axios from 'axios';
@@ -32,7 +32,7 @@ const HRFeedback = () => {
                 console.error('Error fetching pending feedback:', error);
             }
         };
-
+        // console.log(pendingFeedback)
         const fetchHierarchicalPendingFeedback = async () => {
             try {
                 const response = await axios.get(`http://localhost:8001/feedback/get-pending-feedbacks/`, {
@@ -70,10 +70,6 @@ const HRFeedback = () => {
         setIsFormOpen(true);
     };
 
-    const handleSubmit = () => {
-        setIsFormOpen(false);
-    };
-
     const toggleFeedbackDetails = (receiverName) => {
         setExpandedFeedback((prevExpandedFeedback) => ({
             ...prevExpandedFeedback,
@@ -81,12 +77,13 @@ const HRFeedback = () => {
         }));
     };
 
-    const handleCheckboxChange = (key) => {
-        setCheckedFeedbacks((prevCheckedFeedbacks) => ({
-            ...prevCheckedFeedbacks,
-            [key]: !prevCheckedFeedbacks[key],
+    const handleCheckboxChange = (receiverName, feedbackId) => {
+        setCheckedFeedbacks((prevChecked) => ({
+            ...prevChecked,
+            [feedbackId]: !prevChecked[feedbackId], // Toggle selection
         }));
     };
+
 
     return (
         <div className="flex h-screen bg-gray-50">
@@ -102,19 +99,19 @@ const HRFeedback = () => {
                             onClick={() => setActiveTab('pendingRequests')}
                             className={`px-4 py-2 text-sm font-medium ${activeTab === 'pendingRequests' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
                         >
-                            Pending Feedback Requests
+                            Pending Feedbacks
                         </button>
                         <button
                             onClick={() => setActiveTab('submitted')}
                             className={`px-4 py-2 text-sm font-medium ${activeTab === 'submitted' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
                         >
-                            Submitted Feedback
+                            Submitted Feedbacks
                         </button>
                         <button
                             onClick={() => setActiveTab('otherFeedbacks')}
                             className={`px-4 py-2 text-sm font-medium ${activeTab === 'otherFeedbacks' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
                         >
-                            Other Feedbacks
+                            Other's Pending Feedbacks
                         </button>
                     </div>
 
@@ -180,9 +177,10 @@ const HRFeedback = () => {
                                                                 <input
                                                                     type="checkbox"
                                                                     className="form-checkbox h-4 w-4 text-indigo-600"
-                                                                    checked={checkedFeedbacks[receiver.receiver_name] || false}
-                                                                    onChange={() => handleCheckboxChange(receiver.receiver_name)}
+                                                                    checked={!!checkedFeedbacks[feedback.id]} // Ensure boolean value
+                                                                    onChange={() => handleCheckboxChange(receiver.receiver_name, feedback.id)}
                                                                 />
+
                                                             </div>
                                                             <div className="mt-2">
                                                                 {feedback.answers && Object.keys(feedback.answers).length > 0 ? (
@@ -211,7 +209,7 @@ const HRFeedback = () => {
                     )}
 
                     {isFormOpen && selectedFeedback && (
-                        <VoiceFeedbackForm selectedFeedback={selectedFeedback} setIsFormOpen={setIsFormOpen} handleFormSubmit={handleSubmit} />
+                        <VoiceFeedbackForm selectedFeedback={selectedFeedback} setIsFormOpen={setIsFormOpen} />
                     )}
                 </main>
             </div>
