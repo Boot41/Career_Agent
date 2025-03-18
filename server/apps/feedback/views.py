@@ -797,6 +797,13 @@ def get_user_name(user_id):
     except AuthUser.DoesNotExist:
         return "Unknown"
 
+def get_user_email(user_id):
+    try:
+        user = AuthUser.objects.get(id=user_id)
+        return user.email
+    except AuthUser.DoesNotExist:
+        return "Unknown"
+
 @api_view(['GET'])
 def get_pending_feedbacks(request):
     """
@@ -815,11 +822,13 @@ def get_pending_feedbacks(request):
         for feedback in pending_feedbacks:
             giver_name = get_user_name(feedback.giver)  # Fetch giver name
             receiver_name = get_user_name(feedback.receiver)  # Fetch receiver name
+            giver_email = get_user_email(feedback.giver)
 
             feedback_list.append({
                 "id": feedback.id,
                 "giver_id": feedback.giver,
                 "giver_name": giver_name,
+                "giver_email": giver_email,
                 "receiver_id": feedback.receiver,
                 "receiver_name": receiver_name,
                 "questions": feedback.questions,

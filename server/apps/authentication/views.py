@@ -5,6 +5,7 @@ from django.contrib.auth.hashers import check_password
 from .models import AuthUser
 from apps.organizations.models import Organization
 import json
+from django.core.mail import send_mail
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -96,3 +97,24 @@ def check_user_exists(request):
         return JsonResponse({"error": "Invalid JSON", "exists": False}, status=400)
     except Exception as e:
         return JsonResponse({"error": str(e), "exists": False}, status=500)
+
+
+@csrf_exempt
+def send_mail_page(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        receiver_email = data.get("email")
+
+        if receiver_email:
+            send_mail(
+                "Feedback is Pending",
+                "Kindly Give the Pending Feedback .",
+                "ginni110702@gmail.com",
+                [receiver_email],
+                # fail_silently=False,
+            )
+            return JsonResponse({"message": "Email sent successfully"}, status=200)
+        
+        return JsonResponse({"error": "Email is required"}, status=400)
+
+    return JsonResponse({"error": "Invalid request method"}, status=405)

@@ -32,8 +32,8 @@ const HRFeedback = () => {
             } catch (error) {
                 console.error('Error fetching pending feedback:', error);
             }
-        };
-        // console.log(pendingFeedback)
+        };  
+        console.log(pendingFeedback)
         const fetchHierarchicalPendingFeedback = async () => {
             try {
                 const response = await axios.get(`http://localhost:8001/feedback/get-pending-feedbacks/`, {
@@ -88,6 +88,26 @@ const HRFeedback = () => {
                 : [...prevSelected, id] // Add new selection
         );
     };
+
+
+const handleNotif = async (giver) => {
+    console.log("Sending email to:", giver);
+
+    try {
+        const response = await axios.post("http://localhost:8001/auth/send-mail/", {
+            email: giver,  // Ensure this is the correct recipient's email
+        });
+
+        if (response.status === 200) {
+            console.log("Notification sent:", response.data);
+        } else {
+            console.error("Failed to send notification:", response.data);
+        }
+    } catch (error) {
+        console.error("Error sending notification:", error.response ? error.response.data : error.message);
+    }
+};
+
 
     const handleDeleteFeedback = async () => {
         try {
@@ -175,9 +195,17 @@ const HRFeedback = () => {
                             <h2 className="text-2xl font-bold text-gray-800 mb-4">Other's Pending Feedback</h2>
                             {hierarchicalPendingFeedback.length > 0 ? (
                                 hierarchicalPendingFeedback.map((giver) => (
-                                    <div key={giver.giver_id} className="border border-gray-200 rounded-lg p-5 mb-4 w-full text-left">
-                                        <h4 className="font-medium text-gray-800 mb-2">{giver.giver_name} → {giver.receiver_name}</h4>
-                                        <span className="text-sm text-gray-500">Created: {new Date(giver.created_at).toLocaleDateString()}</span>
+                                    <div key={giver.giver_id} className="border border-gray-200 rounded-lg p-5 mb-4 w-full flex flex-col">
+                                        {/* Top Section: Name and Notify Button */}
+                                        <div className="flex justify-between items-center">
+                                            <h4 className="font-medium text-gray-800">{giver.giver_name} → {giver.receiver_name}</h4>
+                                            <button className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600" onClick={()=>handleNotif(giver.giver_email)}>
+                                                Notify
+                                            </button>
+                                        </div>
+
+                                        {/* Bottom Section: Created Date (aligned left) */}
+                                        <span className="text-sm text-gray-500 mt-2">{`Created: ${new Date(giver.created_at).toLocaleDateString()}`}</span>
                                     </div>
                                 ))
                             ) : (
@@ -186,23 +214,24 @@ const HRFeedback = () => {
                         </div>
                     )}
 
+
                     {/* Submitted Feedback */}
                     {activeTab === 'submitted' && (
                         <div className="bg-white shadow-md rounded-lg p-6">
                             <div className="w-full flex flex-row justify-between items-center">
-                            <h2 className="text-2xl font-bold text-gray-800 mb-4">Submitted Feedback</h2>
+                                <h2 className="text-2xl font-bold text-gray-800 mb-4">Submitted Feedback</h2>
 
-                            {selectedFeedbackIds.length > 0 && (
-                                // <div className="flex justify-end mb-4">
-                                <button 
-                                className="p-2 rounded-full bg-red-100 hover:bg-red-200 transition duration-200" 
-                                onClick={handleDeleteFeedback}
-                              >
-                                <FaTrash className="text-red-600 text-lg" />
-                              </button>
-                                // </div>
-                            )}
-</div>
+                                {selectedFeedbackIds.length > 0 && (
+                                    // <div className="flex justify-end mb-4">
+                                    <button
+                                        className="p-2 rounded-full bg-red-100 hover:bg-red-200 transition duration-200"
+                                        onClick={handleDeleteFeedback}
+                                    >
+                                        <FaTrash className="text-red-600 text-lg" />
+                                    </button>
+                                    // </div>
+                                )}
+                            </div>
                             {hierarchicalSubmittedFeedback.length > 0 ? (
                                 <div className="space-y-4">
                                     {hierarchicalSubmittedFeedback.map((receiver) => (
