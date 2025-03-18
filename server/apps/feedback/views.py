@@ -841,13 +841,13 @@ def get_hierarchical_submitted_feedback(request):
     submitted_feedbacks = Feedback.objects.filter(
         organization_id=organization_id, 
         is_submitted=True
-    ).values("receiver", "giver", "answers")
+    ).values("id", "receiver", "giver", "answers")  # Include "id" field
 
     # Group feedback by receiver
     feedback_dict = {}
 
     for feedback in submitted_feedbacks:
-        # feedback_id = feedback["id"]
+        feedback_id = feedback["id"]  # Get feedback ID
         receiver_id = feedback["receiver"]  
         giver_id = feedback["giver"]
         answers = feedback["answers"] if feedback["answers"] else []
@@ -862,9 +862,37 @@ def get_hierarchical_submitted_feedback(request):
             }
 
         feedback_dict[receiver_name]["feedbacks"].append({
-            # "feedback_id": feedback_id,
+            "feedback_id": feedback_id,  # Add feedback ID
             "giver_name": giver_name,
             "answers": answers
         })
 
     return JsonResponse({"submitted_feedbacks": list(feedback_dict.values())}, safe=False)  
+
+
+@api_view(["DELETE"])
+@csrf_exempt
+def delete_feedbacks(request):
+    """
+    API endpoint to delete multiple feedbacks based on their IDs.
+    """
+    try:
+        # Extract feedback IDs from the request body
+        feedback_ids = request.data.get("feedback_ids", [])
+
+        if not feedback_ids:
+            return Response({"error": "No feedback IDs provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Delete feedback entries from the database
+        deleted_count, _ = Feedback.objects.filter(id__in=feedback_ids).delete()
+
+        if deleted_count == 0:
+            return Response({"error": "No matching feedback found"}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(
+            {"message": f"{deleted_count} feedback(s) deleted successfully"},
+            status=status.HTTP_200_OK
+        )
+    
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

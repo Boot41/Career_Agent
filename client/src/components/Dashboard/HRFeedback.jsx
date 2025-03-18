@@ -3,6 +3,7 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import axios from 'axios';
 import VoiceFeedbackForm from './VoiceFeedbackForm';
+import { FaTrash } from "react-icons/fa";
 
 const HRFeedback = () => {
     const [pendingFeedback, setPendingFeedback] = useState([]);
@@ -77,13 +78,43 @@ const HRFeedback = () => {
         }));
     };
 
-    const handleCheckboxChange = (receiverName, feedbackId) => {
-        setCheckedFeedbacks((prevChecked) => ({
-            ...prevChecked,
-            [feedbackId]: !prevChecked[feedbackId], // Toggle selection
-        }));
+    const [selectedFeedbackIds, setSelectedFeedbackIds] = useState([]); // Store multiple selected feedback IDs
+
+    const handleCheckboxChange = (id) => {
+        // console.log(id);
+        setSelectedFeedbackIds((prevSelected) =>
+            prevSelected.includes(id)
+                ? prevSelected.filter(feedbackId => feedbackId !== id) // Deselect if already selected
+                : [...prevSelected, id] // Add new selection
+        );
     };
 
+    const handleDeleteFeedback = async () => {
+        try {
+            const response = await axios.delete(`http://localhost:8001/feedback/api/delete-feedbacks/`, {
+                data: { feedback_ids: selectedFeedbackIds },
+            });
+            console.log("Deleted Feedback:", response.data);
+            setSelectedFeedbackIds([]);
+            const fetchHierarchicalSubmittedFeedback = async () => {
+                try {
+                    const response = await axios.get(`http://localhost:8001/feedback/get-submitted-feedbacks/`, {
+                        params: { organization_id: organization_Id }
+                    });
+
+                    console.log("Submitted Feedback (Hierarchical):", response.data.submitted_feedbacks);
+                    setHierarchicalSubmittedFeedback(response.data.submitted_feedbacks || []);
+                } catch (error) {
+                    console.error("Error fetching hierarchical submitted feedback:", error);
+                }
+            };
+            fetchHierarchicalSubmittedFeedback();
+        } catch (error) {
+            console.error("Error deleting feedback:", error);
+        }
+    };
+
+    console.log(selectedFeedbackIds);
 
     return (
         <div className="flex h-screen bg-gray-50">
@@ -158,8 +189,20 @@ const HRFeedback = () => {
                     {/* Submitted Feedback */}
                     {activeTab === 'submitted' && (
                         <div className="bg-white shadow-md rounded-lg p-6">
+                            <div className="w-full flex flex-row justify-between items-center">
                             <h2 className="text-2xl font-bold text-gray-800 mb-4">Submitted Feedback</h2>
 
+                            {selectedFeedbackIds.length > 0 && (
+                                // <div className="flex justify-end mb-4">
+                                <button 
+                                className="p-2 rounded-full bg-red-100 hover:bg-red-200 transition duration-200" 
+                                onClick={handleDeleteFeedback}
+                              >
+                                <FaTrash className="text-red-600 text-lg" />
+                              </button>
+                                // </div>
+                            )}
+</div>
                             {hierarchicalSubmittedFeedback.length > 0 ? (
                                 <div className="space-y-4">
                                     {hierarchicalSubmittedFeedback.map((receiver) => (
@@ -177,10 +220,9 @@ const HRFeedback = () => {
                                                                 <input
                                                                     type="checkbox"
                                                                     className="form-checkbox h-4 w-4 text-indigo-600"
-                                                                    checked={!!checkedFeedbacks[feedback.id]} // Ensure boolean value
-                                                                    onChange={() => handleCheckboxChange(receiver.receiver_name, feedback.id)}
+                                                                    checked={selectedFeedbackIds.includes(feedback.feedback_id)}
+                                                                    onChange={() => handleCheckboxChange(feedback.feedback_id)}
                                                                 />
-
                                                             </div>
                                                             <div className="mt-2">
                                                                 {feedback.answers && Object.keys(feedback.answers).length > 0 ? (
