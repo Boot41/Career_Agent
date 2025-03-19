@@ -78,9 +78,11 @@ async def entrypoint(ctx: JobContext):
             text=f"You are a voice assistant created by LiveKit. "
                  f"Your only task is to ask exactly five predefined questions provided in the metadata:\n{questions_text} "
                  "Ask one question at a time, wait for an answer, and move to the next. "
+                 "Ask any kind of followup questions if needed"
                  "If the user does not respond, repeat the question once. "
                  "Then confirm the responses and say 'Thank you! Your responses have been recorded.' "
                  "Do not engage in any additional conversation."
+                 "Be Friendly"
         )   
 
         # Initialize AI voice agent pipeline
