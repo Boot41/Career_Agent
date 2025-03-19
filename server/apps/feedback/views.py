@@ -575,6 +575,10 @@ class SwotAnalysisView(APIView):
         # Check if a SWOT analysis already exists for this user and year
         existing_swot = SwotAnalysis.objects.filter(receiver_id=user_id_str, year=year).first()
         
+        if existing_swot and force_new:
+            existing_swot.delete()
+            print(f"Deleted existing SWOT analysis for user {user_id} for year {year}")
+
         if existing_swot and not force_new:
             print(f"Found existing SWOT analysis for user {user_id} for year {year}")
             return Response({
