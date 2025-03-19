@@ -739,6 +739,7 @@ class SwotAnalysisAvailabilityView(APIView):
                     "weaknesses": swot.weaknesses,
                     "opportunities": swot.opportunities,
                     "threats": swot.threats,
+                    "performance_rating": swot.performance_rating,
                     "created_at": swot.created_at.isoformat(),
                 }
                 for swot in swot_analyses
@@ -863,5 +864,15 @@ def delete_feedbacks(request):
             status=status.HTTP_200_OK
         )
     
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+def get_pending_feedback(request):
+    try:
+        id = request.query_params.get('id')
+        if not id:
+            return Response({"error": "No user ID provided"}, status=status.HTTP_400_BAD_REQUEST)
+        pending_feedback = Feedback.objects.filter(giver=id, is_submitted=False).count()
+        return JsonResponse({"pending_feedback": pending_feedback}, status=200)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
