@@ -254,24 +254,29 @@ const HRDashboard = () => {
     setSwotEmployeeId(employeeId);
     setSwotLoading(true);
     setSwotError(null);
-    
+  
     try {
-      // Add force_new=true to force a new SWOT analysis generation
-      console.log(employeeId)
-      const response = await axios.get(`http://localhost:8001/feedback/generate/?user_id=${employeeId}&force_new=true`);
-      
+      console.log("Generating SWOT for Employee ID:", employeeId);
+  
+      const response = await axios.post(
+        "http://localhost:8001/feedback/generate/",
+        { receiver_id: employeeId, force_new: true }, // Send data in the request body
+        { headers: { "Content-Type": "application/json" } }
+      );
+  
       if (response.status === 200) {
         setSwotData(response.data);
       } else {
-        setSwotError('Failed to generate SWOT analysis');
+        setSwotError("Failed to generate SWOT analysis");
       }
     } catch (error) {
-      console.error('Error generating SWOT analysis:', error);
-      setSwotError(error.response?.data?.error || 'Failed to generate SWOT analysis');
+      console.error("Error generating SWOT analysis:", error);
+      setSwotError(error.response?.data?.error || "Failed to generate SWOT analysis");
     } finally {
       setSwotLoading(false);
     }
   };
+  
 
   const checkSWOTAvailability = async (employeeId) => {
     // Store the employee ID in the swotEmployeeId state

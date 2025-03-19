@@ -79,6 +79,7 @@ class SwotAnalysis(models.Model):
     weaknesses = models.TextField()
     opportunities = models.TextField()
     threats = models.TextField()
+    performance_rating = models.FloatField(default=0.0)  # Set a default value
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
