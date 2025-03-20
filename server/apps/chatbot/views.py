@@ -1,9 +1,11 @@
 import os
 import logging
+import uuid
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from groq import Groq
+from apps.feedback.models import SwotAnalysis
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -17,65 +19,82 @@ class ChatbotView(APIView):
     def post(self, request):
         """Handles chatbot queries and fetches responses from Groq AI"""
         user_message = request.data.get("message", "").strip()
-        user_id = request.data.get("user_id")  # Get user ID from request
+        user_id = request.data.get("user_id")  # Get user ID
+        user_list = request.data.get("user_list", [])  # List of {id, name} objects
 
-        logger.info(f"Received message from user {user_id}: {user_message}")
-
-        # Initial message to guide the user
-        if user_message.lower() == "how can you help me?":
-            swot_analysis = self._get_user_swot_analysis(user_id)
-            return Response({"response": f"I can assist you with your SWOT analysis by providing insights into your strengths, weaknesses, opportunities, and threats based on your input. Here is your SWOT analysis: {swot_analysis}. Feel free to ask me any questions related to your SWOT analysis or any other topic!"}, status=status.HTTP_200_OK)
+        logger.info(f"New message from user {user_id}: '{user_message}'")
 
         if not user_message:
-            logger.error("Empty message received")
-            return Response({"error": "Message cannot be empty"}, status=status.HTTP_400_BAD_REQUEST)
+            logger.warning("Oops! The message is empty.")
+            return Response({"error": "Looks like you forgot to type a message! Please try again."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Fetch response from Groq API
-            swot_analysis = self._get_user_swot_analysis(user_id)
-            logger.info(f"SWOT analysis for user {user_id}: {swot_analysis}")
-            response_text = self._fetch_groq_response(user_message, str(swot_analysis))
+            # Fetch SWOT analysis for all users using IDs but return names
+            swot_analysis = self._get_users_swot_analysis(user_list)
+            logger.info(f"Fetched SWOT analysis for users: {swot_analysis}")
+
+            # Send user message along with SWOT analysis to Groq AI
+            response_text = self._fetch_groq_response(user_message, swot_analysis)
+
             return Response({"response": response_text}, status=status.HTTP_200_OK)
 
         except Exception as e:
-            logger.error(f"Chatbot error: {str(e)}", exc_info=True)
-            return Response({"error": "Chatbot service is currently unavailable"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.error(f"Oh no! Something went wrong: {str(e)}", exc_info=True)
+            return Response({"error": "Sorry! I'm having a bit of trouble right now. Please try again soon."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def _fetch_groq_response(self, message, swot_analysis):
         """Connects to Groq API and fetches response"""
-        api_key = "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"  # Keep as is
+        api_key = os.getenv("GROQ_API_KEY")  # Use API key from environment
 
         if not api_key:
-            raise ValueError("Groq API key is missing! Set GROQ_API_KEY in .env")
+            raise ValueError("Oops! Groq API key is missing. Make sure to set GROQ_API_KEY in your .env file.")
 
         try:
             client = Groq(api_key=api_key)
             response = client.chat.completions.create(
-                messages=[{"role": "user", "content": f"{message} {swot_analysis}"}],
+                messages=[{"role": "user", "content": f"Message: {message} \nSWOT Analysis: {swot_analysis}"}],
                 model="llama3-70b-8192"
             )
 
             if response and hasattr(response, "choices") and response.choices:
-                return response.choices[0].message.content.strip()  
+                return response.choices[0].message.content.strip()
             else:
-                return "I'm sorry, but I couldn't process your request."
+                return "Hmm, I couldn't quite process that. Could you try rephrasing?"
 
         except Exception as e:
             logger.error(f"Groq API error: {str(e)}", exc_info=True)
-            return "Chatbot service is currently unavailable"
+            return "Sorry, I'm having trouble connecting to my AI brain right now. Please try again later!"
 
-    def _get_user_swot_analysis(self, user_id):
-        """Fetches SWOT analysis for the given user ID"""
-        # Implement logic to fetch user's SWOT analysis from the database or other data source
-        try:
-            # Placeholder: Replace with actual database query or API call to retrieve SWOT analysis
-            swot_analysis = {
-                "strengths": ["Strong communication skills", "Team player"],
-                "weaknesses": ["Poor communication skills", "Unresponsive"],
-                "opportunities": ["Training programs", "Mentorship"],
-                "threats": ["High competition", "Market changes"]
-            }   
-            return swot_analysis
-        except Exception as e:
-            logger.error(f"Error fetching SWOT analysis for user {user_id}: {str(e)}", exc_info=True)
-            return "Unable to fetch SWOT analysis at this time."
+    def _get_users_swot_analysis(self, user_list):
+        """Fetches SWOT analysis for all users in the given list, using their names instead of UUIDs"""
+        swot_data = {}
+
+        for user in user_list:
+            try:
+                user_id = user.get("id")  # Extract user ID
+                user_name = user.get("name", f"Unknown-{user_id}")  # Extract name or fallback
+
+                # Convert user_id to UUID
+                user_uuid = uuid.UUID(user_id)
+
+                # Fetch SWOT analysis using .filter() to avoid exceptions
+                swot_analysis = SwotAnalysis.objects.filter(receiver__id=user_uuid).first()
+
+                if swot_analysis:
+                    swot_data[user_name] = {  # Use username instead of user_id
+                        "strengths": swot_analysis.strengths,
+                        "weaknesses": swot_analysis.weaknesses,
+                        "opportunities": swot_analysis.opportunities,
+                        "threats": swot_analysis.threats,
+                        "performance_rating": swot_analysis.performance_rating
+                    }
+                else:
+                    logger.info(f"No SWOT analysis found for {user_name} (ID: {user_id}).")
+                    swot_data[user_name] = "No SWOT analysis available yet."
+
+            except ValueError:
+                logger.warning(f"Oops! The provided user ID isn't a valid UUID: {user_id}")
+                swot_data[f"Invalid-{user_id}"] = "Invalid user ID provided."
+
+        return swot_data  # Return SWOT data with names as keys
+    
