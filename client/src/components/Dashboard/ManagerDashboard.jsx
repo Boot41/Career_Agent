@@ -24,7 +24,7 @@ const ManagerDashboard = () => {
   const [swotData, setSwotData] = useState(null);
   const [swotLoading, setSwotLoading] = useState(false);
   const [swotError, setSwotError] = useState(null);
-
+  
   useEffect(() => {
     const storedUserData = localStorage.getItem('userData');
     if (storedUserData) {
@@ -81,6 +81,7 @@ const ManagerDashboard = () => {
     
         console.log('Fetched team members:', data);
         setTeamMembers(data); // Update state with the team members
+        // console.log(teamMembers)
       } catch (error) {
         console.error('Error fetching team members:', error);
       }
@@ -107,7 +108,8 @@ const ManagerDashboard = () => {
     fetchPendingFeedback();
   }, []);
   // const [selectedFeedback, setSelectedFeedback] = useState(null);
-
+  const userList = teamMembers?.map((user) => ({id: user.id, name: user.name}));
+  console.log(userList)
   const handlePendingFeedback = (feedback) => {
     setSelectedFeedback(feedback);
     setIsFormOpen(true);
@@ -491,7 +493,7 @@ const ManagerDashboard = () => {
       </button>
 
       {/* Chatbot Component */}
-      <Chatbot isOpen={isChatbotOpen} setIsOpen={setIsChatbotOpen} />
+      <Chatbot isOpen={isChatbotOpen} setIsOpen={setIsChatbotOpen} userList={userList}/>
     </div>
   );
 };

@@ -23,7 +23,9 @@ const EmployeeDashboard = () => {
   const [swotData, setSwotData] = useState(null);
   const [isSwotModalOpen, setIsSwotModalOpen] = useState(false);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false); // New state variable to track chatbot toggle
-
+  const user = JSON.parse(localStorage.getItem('userData'));
+  const userList = [{ id: user.id, name: user.name }];
+  
   useEffect(() => {
     const storedUserData = localStorage.getItem('userData');
     if (storedUserData) {
@@ -34,7 +36,6 @@ const EmployeeDashboard = () => {
       console.log('User ID:', userId);  // Log user ID
     }
   }, []);
-
   useEffect(() => {
     const fetchPendingFeedback = async () => {
       if (userData && userData.id) {
@@ -356,12 +357,11 @@ const EmployeeDashboard = () => {
             <Chatbot 
               isOpen={isChatbotOpen} 
               setIsOpen={setIsChatbotOpen} 
-              userId={userData ? userData.id : null}  // Pass userId as prop
+              userList={userList}
             />
           )}
         </main>
       </div>
-      
       {/* SWOT Modal */}
       <SwotModal />
     </div>
