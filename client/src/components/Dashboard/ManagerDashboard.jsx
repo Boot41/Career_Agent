@@ -5,6 +5,7 @@ import { Users, MessageSquareText, Star, Send, Activity } from 'lucide-react';
 import axios from 'axios';
 import Modal from 'react-modal';
 import Chatbot from './Chatbot'; // Import the Chatbot component
+import VoiceFeedbackForm from './VoiceFeedbackForm';
 
 const ManagerDashboard = () => {
   const [teamMembers, setTeamMembers] = useState([]);
@@ -28,10 +29,10 @@ const ManagerDashboard = () => {
     const storedUserData = localStorage.getItem('userData');
     if (storedUserData) {
       const userData = JSON.parse(storedUserData);
-      console.log('User Data:', userData);  // Log user data
+      console.log('User Data:', userData);  
       setUserData(userData);
-      const userId = userData.id;  // Fetch the user ID
-      console.log('User ID:', userId);  // Log user ID
+      const userId = userData.id;  
+      console.log('User ID:', userId);  
 
       // Fetch SWOT analysis for the user
       const fetchSwotAnalysis = async () => {
@@ -84,26 +85,33 @@ const ManagerDashboard = () => {
         console.error('Error fetching team members:', error);
       }
     };
-    
 
     const fetchPendingFeedback = async () => {
-      const userId = 'd46f5ded-f660-4e52-aa98-077278c33d7b';
       try {
-        const response = await fetch(`http://localhost:8001/feedback/pending-feedback/?user_id=${userId}`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        const storedUserData = localStorage.getItem('userData');
+        if (!storedUserData) {
+          console.error('No user data found in localStorage.');
+          return;
         }
-        const data = await response.json();
-        setPendingFeedback(data);
+        const userData = JSON.parse(storedUserData);
+        const userId = userData.id;
+        const response = await axios.get(`http://localhost:8001/feedback/pending-feedback/?user_id=${userId}`);
+        setPendingFeedback(response.data || []);
+        console.log(pendingFeedback);
       } catch (error) {
         console.error('Error fetching pending feedback:', error);
       }
-    };
-
+    };  
+    
     fetchTeamMembers();
     fetchPendingFeedback();
   }, []);
+  // const [selectedFeedback, setSelectedFeedback] = useState(null);
 
+  const handlePendingFeedback = (feedback) => {
+    setSelectedFeedback(feedback);
+    setIsFormOpen(true);
+};
   /**
    * Handle response change for a specific question
    * @param {string} questionId 
@@ -206,8 +214,9 @@ const ManagerDashboard = () => {
       
       if (response.status === 200) {
         if (response.data && response.data.length > 0) {
-          console.log('SWOT analyses found:', response.data.length);
-          console.log('SWOT data details:', JSON.stringify(response.data, null, 2));
+          // console.log('SWOT analyses found:', response.data.length);
+          // console.log('SWOT data details:', JSON.stringify(response.data, null, 2));
+          console.log(response.data)
           setSwotData(response.data);
           setIsSwotModalOpen(true);
         } else {
@@ -235,115 +244,94 @@ const ManagerDashboard = () => {
   };
 
   // SWOT Analysis Modal Component
-  const SwotModal = () => {
-    return (
-      <Modal 
-        isOpen={isSwotModalOpen} 
-        onRequestClose={() => setIsSwotModalOpen(false)}
-        className="bg-white p-6 rounded-lg shadow-xl max-w-4xl mx-auto mt-20 max-h-[80vh] overflow-y-auto"
-        overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex justify-center"
-      >
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">SWOT Analysis</h2>
-          <button 
-            onClick={() => setIsSwotModalOpen(false)}
-            className="p-2 rounded-full hover:bg-gray-100"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        
-        {swotLoading && (
-          <div className="flex justify-center items-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+    const SwotModal = () => {
+      return (
+        <Modal 
+          isOpen={isSwotModalOpen} 
+          onRequestClose={() => setIsSwotModalOpen(false)}
+          className="bg-white p-6 rounded-lg shadow-xl max-w-4xl mx-auto mt-20 max-h-[80vh] overflow-y-auto"
+          overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex justify-center"
+        >
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">SWOT Analysis</h2>
+            <button 
+              onClick={() => setIsSwotModalOpen(false)}
+              className="p-2 rounded-full hover:bg-gray-100"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-        )}
-        
-        {swotError && (
-          <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg mb-6">
-            <h4 className="font-bold mb-2">Error</h4>
-            <p>{swotError}</p>
-          </div>
-        )}
-        
-        {swotData && swotData.length > 0 ? (
-          swotData.map((swot, index) => (
-            <div key={swot.id} className="mb-8 p-6 border border-gray-200 rounded-lg bg-gray-50">
-              <div className="mb-4 pb-3 border-b border-gray-200">
-                <h3 className="text-xl font-semibold text-gray-700">SWOT Analysis for Year: {swot.year}</h3>
-                <p className="text-sm text-gray-500">Created: {new Date(swot.created_at).toLocaleDateString()}</p>
-              </div>
-              
-              <div className="mb-4">
-                <h4 className="font-bold text-gray-700 mb-2">Summary</h4>
-                <p className="text-gray-600 whitespace-pre-line">{swot.summary}</p>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-4 bg-green-50 border border-green-100 rounded-lg">
-                  <h4 className="font-bold text-green-700 mb-2">Strengths</h4>
-                  <p className="text-gray-600 whitespace-pre-line">{swot.strengths}</p>
-                </div>
-                
-                <div className="p-4 bg-red-50 border border-red-100 rounded-lg">
-                  <h4 className="font-bold text-red-700 mb-2">Weaknesses</h4>
-                  <p className="text-gray-600 whitespace-pre-line">{swot.weaknesses}</p>
-                </div>
-                
-                <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
-                  <h4 className="font-bold text-blue-700 mb-2">Opportunities</h4>
-                  <p className="text-gray-600 whitespace-pre-line">{swot.opportunities}</p>
-                </div>
-                
-                <div className="p-4 bg-yellow-50 border border-yellow-100 rounded-lg">
-                  <h4 className="font-bold text-yellow-700 mb-2">Threats</h4>
-                  <p className="text-gray-600 whitespace-pre-line">{swot.threats}</p>
-                </div>
-              </div>
+          
+          {swotLoading && (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
             </div>
-          ))
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-gray-600">No SWOT analysis found for this employee.</p>
-          </div>
-        )}
-      </Modal>
-    );
-  };
+          )}
+          
+          {swotError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg mb-6">
+              <h4 className="font-bold mb-2">Error</h4>
+              <p>{swotError}</p>
+            </div>
+          )}
+          
+          {swotData && swotData.length > 0 ? (
+            swotData.map((swot, index) => (
+              <div key={swot.id} className="mb-8 p-6 border border-gray-200 rounded-lg bg-gray-50">
+                <div className="flex justify-between items-start">
+                  <div className="mb-4 pb-3 border-b border-gray-200 flex-1">
+                    <h3 className="text-xl font-semibold text-gray-700">SWOT Analysis for Year: {swot.year}</h3>
+                    <p className="text-sm text-gray-500">Created: {new Date(swot.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <div className="ml-4 p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                    <h4 className="font-bold text-blue-700">Performance Rating</h4>
+                    <p className="text-gray-600">{swot.performance_rating ? swot.performance_rating : 'Not Rated'}</p>
+                  </div>
+                </div>
+                
+                <div className="mb-4">
+                  <h4 className="font-bold text-gray-700 mb-2">Summary</h4>
+                  <p className="text-gray-600 whitespace-pre-line">{swot.summary}</p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-4 bg-green-50 border border-green-100 rounded-lg">
+                    <h4 className="font-bold text-green-700 mb-2">Strengths</h4>
+                    <p className="text-gray-600 whitespace-pre-line">{swot.strengths}</p>
+                  </div>
+                  
+                  <div className="p-4 bg-red-50 border border-red-100 rounded-lg">
+                    <h4 className="font-bold text-red-700 mb-2">Weaknesses</h4>
+                    <p className="text-gray-600 whitespace-pre-line">{swot.weaknesses}</p>
+                  </div>
+                  
+                  <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                    <h4 className="font-bold text-blue-700 mb-2">Opportunities</h4>
+                    <p className="text-gray-600 whitespace-pre-line">{swot.opportunities}</p>
+                  </div>
+                  
+                  <div className="p-4 bg-yellow-50 border border-yellow-100 rounded-lg">
+                    <h4 className="font-bold text-yellow-700 mb-2">Threats</h4>
+                    <p className="text-gray-600 whitespace-pre-line">{swot.threats}</p>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-600">No SWOT analysis found for this employee.</p>
+            </div>
+          )}
+        </Modal>
+      );
+    };
 
-  const renderFeedbackForm = () => {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-        <div className="bg-white rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-800 mb-4">Questions for {selectedFeedback.receiver_name}</h3>
-          {selectedFeedback.questions.map((question, index) => (
-            <div key={index} className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {index + 1}. {question}
-              </label>
-              <textarea
-                value={responses[`${selectedFeedback.id}-${index}`] || ''}
-                onChange={(e) => handleResponseChange(`${selectedFeedback.id}-${index}`, e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[100px]"
-                placeholder="Provide your feedback here..."
-              />
-            </div>
-          ))}
-          <div className="flex justify-end">
-            <button onClick={handleSubmit} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-              <Send size={18} />
-              <span>Submit Feedback</span>
-            </button>
-            <button onClick={() => setIsFormOpen(false)} className="ml-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100">
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
+    
+  {isFormOpen && selectedFeedback && (
+    <VoiceFeedbackForm selectedFeedback={selectedFeedback} setIsFormOpen={setIsFormOpen} />
+)}
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -464,52 +452,30 @@ const ManagerDashboard = () => {
               </div>
             )}
             {activeTab === 'pendingRequests' && (
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-medium text-gray-800 mb-4">Pending Feedback Requests</h3>
-                {submitted ? (
-                  <div className="text-center py-8">
-                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-green-600 mx-auto mb-4">
-                      <MessageSquareText size={32} />
-                    </div>
-                    <h3 className="text-xl font-medium text-gray-800 mb-2">Feedback Submitted</h3>
-                    <p className="text-gray-600">Thank you for submitting your feedback.</p>
-                  </div>
-                ) : (
-                  <div>
-                    {pendingFeedback.length > 0 ? (
-                      <div className="space-y-4">
-                        {pendingFeedback.map(feedback => (
-                          <div key={feedback.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h4 className="font-medium text-gray-800">{feedback.title}</h4>
-                                <p className="text-sm text-gray-600 mt-1">For: {feedback.for}</p>
-                                <p className="text-xs text-gray-500 mt-1">Due: {feedback.dueDate}</p>
-                              </div>
-                              <button 
-                                onClick={() => openFeedbackForm(feedback)}
-                                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center gap-2"
-                              >
-                                <Send size={16} />
-                                Submit
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <p className="text-gray-600">No pending feedback requests.</p>
-                      </div>
+                        <div className="bg-white shadow-md rounded-lg p-6 mb-6">
+                            <h2 className="text-2xl font-bold text-gray-800 mb-4">Your Pending Feedback</h2>
+                            {pendingFeedback.length > 0 ? (
+                                pendingFeedback.map((request) => (
+                                    <button
+                                        key={request.id}
+                                        className="border border-gray-200 rounded-lg p-5 mb-4 w-full text-left"
+                                        onClick={() => handlePendingFeedback(request)}
+                                    >
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h4 className="font-medium text-gray-800">Feedback for: {request.receiver_name}</h4>
+                                            <span className="text-sm text-gray-500">Created: {new Date(request.created_at).toLocaleDateString()}</span>
+                                        </div>
+                                    </button>
+                                ))
+                            ) : (
+                                <p className="text-gray-500">No pending feedback available.</p>
+                            )}
+                        </div>
                     )}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
           
           {/* Render the feedback form modal */}
-          {isFormOpen && selectedFeedback && renderFeedbackForm()}
+          {isFormOpen && selectedFeedback && <VoiceFeedbackForm selectedFeedback={selectedFeedback} setIsFormOpen={setIsFormOpen} />}
         </main>
       </div>
       

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { FaTimes } from "react-icons/fa";
+import { XCircle, Loader } from "lucide-react";
 import "@livekit/components-styles";
 import {
   LiveKitRoom,
@@ -13,10 +13,11 @@ import { useMaybeRoomContext } from "@livekit/components-react";
 
 const VoiceFeedbackForm = ({ selectedFeedback, setIsFormOpen }) => {
   const [token, setToken] = useState(null);
-  const [answers, setAnswers] = useState({});
   const [transcriptions, setTranscriptions] = useState("");
   const feedbackId = selectedFeedback?.id;
   const questions = selectedFeedback?.questions || [];
+
+  
 
   useEffect(() => {
     const fetchToken = async () => {
@@ -78,29 +79,35 @@ const VoiceFeedbackForm = ({ selectedFeedback, setIsFormOpen }) => {
     }
   };
 
-  return token ? (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg p-6 w-[450px] shadow-xl relative">
-        <button onClick={() => setIsFormOpen(false)} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
-          <FaTimes size={18} />
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl p-6 w-[500px] relative animate-fadeIn">
+        <button
+          onClick={() => setIsFormOpen(false)}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
+        >
+          <XCircle className="w-6 h-6" />
         </button>
-        <h3 className="text-xl font-bold text-gray-800 mb-4">
-          🎤 Voice Feedback for <span className="text-blue-500">{selectedFeedback.receiver_name}</span>
-        </h3>
-        <div className="border border-gray-200 rounded-lg p-4 bg-gray-100">
-          <LiveKitRoom audio token={token} serverUrl="wss://app-gk63q26e.livekit.cloud">
-            <Transcriptions setTranscriptions={setTranscriptions} handleRoomDisconnect={handleRoomDisconnect} />
-            <SimpleVoiceAssistant />
-            <VoiceAssistantControlBar />
-            <RoomAudioRenderer />
-          </LiveKitRoom>
-        </div>
-      </div>
-    </div>
-  ) : (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-[400px] text-center">
-        <p className="text-gray-700 text-lg">Fetching voice session...</p>
+        {token ? (
+          <>
+            <h3 className="text-2xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              🎤 Voice Feedback for <span className="text-blue-600">{selectedFeedback.receiver_name}</span>
+            </h3>
+            <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+              <LiveKitRoom audio token={token} serverUrl="wss://app-gk63q26e.livekit.cloud">
+                <Transcriptions setTranscriptions={setTranscriptions} handleRoomDisconnect={handleRoomDisconnect} />
+                <SimpleVoiceAssistant />
+                <VoiceAssistantControlBar />
+                <RoomAudioRenderer />
+              </LiveKitRoom>
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-10">
+            <Loader className="animate-spin text-indigo-600 mb-4" size={40} />
+            <p className="text-gray-700 text-lg">Initializing voice session...</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -109,9 +116,9 @@ const VoiceFeedbackForm = ({ selectedFeedback, setIsFormOpen }) => {
 function SimpleVoiceAssistant() {
   const { state } = useVoiceAssistant();
   return (
-    <div className="h-80">
+    <div className="h-80 flex flex-col items-center justify-center">
       <BarVisualizer state={state} barCount={5} />
-      <p className="text-center">{state}</p>
+      <p className="text-gray-600 font-medium mt-4">{state}</p>
     </div>
   );
 }

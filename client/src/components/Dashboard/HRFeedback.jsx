@@ -215,69 +215,70 @@ const handleNotif = async (giver) => {
                     )}
 
 
-                    {/* Submitted Feedback */}
-                    {activeTab === 'submitted' && (
-                        <div className="bg-white shadow-md rounded-lg p-6">
-                            <div className="w-full flex flex-row justify-between items-center">
-                                <h2 className="text-2xl font-bold text-gray-800 mb-4">Submitted Feedback</h2>
-
-                                {selectedFeedbackIds.length > 0 && (
-                                    // <div className="flex justify-end mb-4">
-                                    <button
-                                        className="p-2 rounded-full bg-red-100 hover:bg-red-200 transition duration-200"
-                                        onClick={handleDeleteFeedback}
-                                    >
-                                        <FaTrash className="text-red-600 text-lg" />
-                                    </button>
-                                    // </div>
-                                )}
-                            </div>
-                            {hierarchicalSubmittedFeedback.length > 0 ? (
-                                <div className="space-y-4">
-                                    {hierarchicalSubmittedFeedback.map((receiver) => (
-                                        <div key={receiver.receiver_name} className="p-4 border border-gray-300 rounded-lg bg-white shadow-sm">
-                                            <div className="flex justify-between items-center cursor-pointer" onClick={() => toggleFeedbackDetails(receiver.receiver_name)}>
-                                                <h3 className="text-lg font-semibold text-gray-800">Receiver: {receiver.receiver_name}</h3>
-                                                <span className="text-indigo-600">{expandedFeedback[receiver.receiver_name] ? "▲" : "▼"}</span>
-                                            </div>
-                                            {expandedFeedback[receiver.receiver_name] && (
-                                                <ul className="mt-2 space-y-2">
-                                                    {receiver.feedbacks.map((feedback, index) => (
-                                                        <li key={index} className="p-3 bg-gray-50 rounded-md border">
-                                                            <div className="flex justify-between items-center">
-                                                                <p className="text-sm text-gray-600">Giver: {feedback.giver_name}</p>
-                                                                <input
-                                                                    type="checkbox"
-                                                                    className="form-checkbox h-4 w-4 text-indigo-600"
-                                                                    checked={selectedFeedbackIds.includes(feedback.feedback_id)}
-                                                                    onChange={() => handleCheckboxChange(feedback.feedback_id)}
-                                                                />
-                                                            </div>
-                                                            <div className="mt-2">
-                                                                {feedback.answers && Object.keys(feedback.answers).length > 0 ? (
-                                                                    <ul className="list-disc pl-5 text-sm text-gray-800">
-                                                                        {Object.values(feedback.answers).map((answer, idx) => (
-                                                                            <li key={idx} className="flex items-center space-x-2">
-                                                                                <span>{answer}</span>
-                                                                            </li>
-                                                                        ))}
-                                                                    </ul>
-                                                                ) : (
-                                                                    <p className="text-sm text-gray-500">No Answers Provided</p>
-                                                                )}
-                                                            </div>
+                   {/* Submitted Feedback */}
+{activeTab === 'submitted' && (
+    <div className="bg-white shadow-lg rounded-xl p-6">
+        <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold text-gray-800">Submitted Feedback</h2>
+            {selectedFeedbackIds.length > 0 && (
+                <button
+                    className="p-2 rounded-full bg-red-100 hover:bg-red-200 transition duration-200 shadow-sm"
+                    onClick={handleDeleteFeedback}
+                >
+                    <FaTrash className="text-red-600 text-lg" />
+                </button>
+            )}
+        </div>
+        {hierarchicalSubmittedFeedback.length > 0 ? (
+            <div className="space-y-4">
+                {hierarchicalSubmittedFeedback.map((receiver) => (
+                    <div key={receiver.receiver_name} className="p-5 border border-gray-200 rounded-lg bg-gray-50 shadow-sm">
+                        <div
+                            className="flex justify-between items-center cursor-pointer py-2 px-3 bg-white rounded-lg shadow-sm hover:bg-gray-100 transition"
+                            onClick={() => toggleFeedbackDetails(receiver.receiver_name)}
+                        >
+                            <h3 className="text-lg font-semibold text-gray-800">Receiver: {receiver.receiver_name}</h3>
+                            <span className="text-indigo-600 font-bold text-lg">{expandedFeedback[receiver.receiver_name] ? "▲" : "▼"}</span>
+                        </div>
+                        {expandedFeedback[receiver.receiver_name] && (
+                            <ul className="mt-3 space-y-3">
+                                {receiver.feedbacks.map((feedback, index) => (
+                                    <li key={index} className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+                                        <div className="flex justify-between items-center">
+                                            <p className="text-sm text-gray-600 font-medium">Giver: {feedback.giver_name}</p>
+                                            <input
+                                                type="checkbox"
+                                                className="form-checkbox h-5 w-5 text-indigo-600 rounded-md focus:ring-2 focus:ring-indigo-500"
+                                                checked={selectedFeedbackIds.includes(feedback.feedback_id)}
+                                                onChange={() => handleCheckboxChange(feedback.feedback_id)}
+                                            />
+                                        </div>
+                                        <div className="mt-3">
+                                            {feedback.answers && Object.keys(feedback.answers).length > 0 ? (
+                                                <ul className="list-disc pl-5 text-sm text-gray-700">
+                                                    {Object.values(feedback.answers).map((answer, idx) => (
+                                                        <li key={idx} className="flex items-center space-x-2">
+                                                            <span className="font-medium">{answer}</span>
                                                         </li>
                                                     ))}
                                                 </ul>
+                                            ) : (
+                                                <p className="text-sm text-gray-500 italic">No Answers Provided</p>
                                             )}
                                         </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-gray-500">No submitted feedback available.</p>
-                            )}
-                        </div>
-                    )}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                ))}
+            </div>
+        ) : (
+            <p className="text-gray-500 text-center py-4">No submitted feedback available.</p>
+        )}
+    </div>
+)}
+
 
                     {isFormOpen && selectedFeedback && (
                         <VoiceFeedbackForm selectedFeedback={selectedFeedback} setIsFormOpen={setIsFormOpen} />

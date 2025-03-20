@@ -18,6 +18,7 @@ import {
   Network
 } from 'lucide-react';
 import Modal from 'react-modal';
+import Hello from './Hello';
 
 const HRDashboard = () => {
   // Organization Hierarchy State
@@ -30,22 +31,8 @@ const HRDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userData, setUserData] = useState(null);
-  const [organizationId, setOrganizationId] = useState(null); // Add this line to store organization ID
-
-  // Mock data - to be replaced with actual backend data
-  const employees = [
-    { id: 1, name: 'John Doe', role: 'Employee', department: 'Engineering', email: 'john@company.com' },
-    { id: 2, name: 'Jane Smith', role: 'Manager', department: 'Product', email: 'jane@company.com' },
-    { id: 3, name: 'Mike Johnson', role: 'Employee', department: 'Sales', email: 'mike@company.com' },
-    { id: 4, name: 'Emily Brown', role: 'HR', department: 'HR', email: 'emily@company.com' },
-    { id: 5, name: 'David Lee', role: 'Manager', department: 'Engineering', email: 'david@company.com' }
-  ];
-
-  const pendingInvitations = [
-    { id: 1, name: 'Alex Brown', email: 'alex@company.com', sentDate: '2024-02-15' },
-    { id: 2, name: 'Sarah Lee', email: 'sarah@company.com', sentDate: '2024-02-20' }
-  ];
-
+  const [organizationId, setOrganizationId] = useState(null); 
+  const [showGreeting, setShowGreeting] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [inviteFormData, setInviteFormData] = useState({
@@ -55,7 +42,7 @@ const HRDashboard = () => {
   });
 
   // Feedback Generation State
-  const [activeTab, setActiveTab] = useState('hierarchy');
+  const [activeTab, setActiveTab] = useState('hello');
   const [selectedFeedbackEmployee, setSelectedFeedbackEmployee] = useState(null);
   const [generatedQuestions, setGeneratedQuestions] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -80,7 +67,7 @@ const HRDashboard = () => {
     if (storedUserData) {
       setUserData(JSON.parse(storedUserData));
     }
-
+    
     const fetchOrganizationHierarchy = async () => {
       try {
         const storedUserData = localStorage.getItem('userData');
@@ -137,30 +124,6 @@ const HRDashboard = () => {
       setId(null);
     }
   };
-
-  const handleInviteEmployee = () => {
-    setIsInviteModalOpen(true);
-  };
-
-  const handleInviteFormChange = (e) => {
-    const { name, value } = e.target;
-    setInviteFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const submitInvitation = () => {
-    // TODO: Implement actual invitation logic
-    console.log('Sending invitation:', inviteFormData);
-    setInviteFormData({
-      name: '',
-      email: '',
-      role: 'employee'
-    });
-    setIsInviteModalOpen(false);
-  };
-
   const handleGenerateQuestions = async (params) => {
     setIsGenerating(true);
     setGeneratedQuestions([]);
@@ -542,36 +505,6 @@ const deleteSWOTAnalysis = async (swotId) => {
     );
   };
 
-  const renderEmployeeList = () => {
-    const employees = [
-      { id: 1, name: 'John Doe', role: 'Employee' },
-      { id: 2, name: 'Jane Smith', role: 'Manager' },
-      { id: 3, name: 'Alice Johnson', role: 'Employee' },
-      // Add more employees as needed
-    ];
-
-    return (
-      <div className="space-y-4">
-        {employees.map(employee => (
-          <div key={employee.id} className="flex justify-between items-center bg-white shadow-sm border border-gray-200 rounded-lg p-4">
-            <div>
-              <h3 className="font-bold text-lg">{employee.name}</h3>
-              <p className="text-gray-600">{employee.role}</p>
-            </div>
-            <div>
-              <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition mr-2" onClick={() => generateSWOTAnalysis(employee.id)}>
-                Generate SWOT Analysis
-              </button>
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition" onClick={() => checkSWOTAvailability(employee.id)}>
-                Check SWOT Availability
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
   const renderSWOTAnalysis = () => {
     const allPeople = [
       ...organizationHierarchy.managers.map(manager => ({
@@ -634,6 +567,8 @@ const deleteSWOTAnalysis = async (swotId) => {
     );
   };
 
+
+
   const SwotModal = () => {
     return (
       <Modal 
@@ -657,10 +592,16 @@ const deleteSWOTAnalysis = async (swotId) => {
         {swotData && swotData.length > 0 ? (
           swotData.map((swot, index) => (
             <div key={swot.id} className="mb-8 p-6 border border-gray-200 rounded-lg bg-gray-50">
-              <div className="mb-4 pb-3 border-b border-gray-200">
-                <h3 className="text-xl font-semibold text-gray-700">SWOT Analysis for Year: {swot.year}</h3>
-                <p className="text-sm text-gray-500">Created: {new Date(swot.created_at).toLocaleDateString()}</p>
-              </div>
+              <div className="flex justify-between items-start">
+                  <div className="mb-4 pb-3 border-b border-gray-200 flex-1">
+                    <h3 className="text-xl font-semibold text-gray-700">SWOT Analysis for Year: {swot.year}</h3>
+                    <p className="text-sm text-gray-500">Created: {new Date(swot.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <div className="ml-4 p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                    <h4 className="font-bold text-blue-700">Performance Rating</h4>
+                    <p className="text-gray-600">{swot.performance_rating ? swot.performance_rating : 'Not Rated'}</p>
+                  </div>
+                </div>
               
               <div className="mb-4">
                 <h4 className="font-bold text-gray-700 mb-2">Summary</h4>
@@ -734,6 +675,18 @@ const deleteSWOTAnalysis = async (swotId) => {
               {/* Tabs */}
               <div className="mb-6 border-b border-gray-200">
                 <nav className="-mb-px flex space-x-8">
+                <button
+                    onClick={() => {
+                      setActiveTab('hello');
+                    }}
+                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'hello'
+                        ? 'border-indigo-500 text-indigo-600' 
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Hello
+                  </button>
                   <button
                     onClick={() => setActiveTab('hierarchy')}
                     className={`py-4 px-1 border-b-2 font-medium text-sm ${
@@ -767,102 +720,43 @@ const deleteSWOTAnalysis = async (swotId) => {
                 </nav>
               </div>
 
-              {/* Content based on active tab */}
-              {activeTab === 'hierarchy' ? (
-                isLoading ? (
-                  <div className="flex justify-center items-center h-full">
-                    <Loader2 className="animate-spin text-indigo-600" size={48} />
-                  </div>
-                ) : error ? (
-                  <div className="bg-red-50 p-6 rounded-lg text-red-700 space-y-4">
-                    <h2 className="text-2xl font-bold flex items-center">
-                      <CheckCircle className="mr-3 text-red-500" /> 
-                      Error Fetching Organization Data
-                    </h2>
-                    <p className="text-lg">{error}</p>
-                    <div className="bg-red-100 p-4 rounded-md">
-                      <h3 className="font-semibold mb-2">Troubleshooting Tips:</h3>
-                      <ul className="list-disc list-inside">
-                        <li>Verify your network connection</li>
-                        <li>Check if you are logged in correctly</li>
-                        <li>Ensure your organization is properly configured</li>
-                        <li>Contact system administrator if problem persists</li>
-                      </ul>
-                    </div>
-                  </div>
-                ) : (
-                  renderOrganizationHierarchy()
-                )
-              ) : activeTab === 'feedback' ? (
-                renderFeedbackGeneration()
-              ) : (
-                renderSWOTAnalysis()
-              )}
+{/* Content based on active tab */}
+{activeTab === 'hierarchy' ? (
+  isLoading ? (
+    <div className="flex justify-center items-center h-full">
+      <Loader2 className="animate-spin text-indigo-600" size={48} />
+    </div>
+  ) : error ? (
+    <div className="bg-red-50 p-6 rounded-lg text-red-700 space-y-4">
+      <h2 className="text-2xl font-bold flex items-center">
+        <CheckCircle className="mr-3 text-red-500" /> 
+        Error Fetching Organization Data
+      </h2>
+      <p className="text-lg">{error}</p>
+      <div className="bg-red-100 p-4 rounded-md">
+        <h3 className="font-semibold mb-2">Troubleshooting Tips:</h3>
+        <ul className="list-disc list-inside">
+          <li>Verify your network connection</li>
+          <li>Check if you are logged in correctly</li>
+          <li>Ensure your organization is properly configured</li>
+          <li>Contact system administrator if the problem persists</li>
+        </ul>
+      </div>
+    </div>
+  ) : (
+    renderOrganizationHierarchy()
+  )
+) : activeTab === 'feedback' ? (
+  renderFeedbackGeneration()
+) : activeTab === 'swot' ? (
+  renderSWOTAnalysis()
+) : (
+  <Hello />
+)}
             </div>
           </div>
         </main>
       </div>
-      
-      {/* Invite Employee Modal */}
-      {isInviteModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-96">
-            <h2 className="text-xl font-bold mb-4 text-gray-800 flex items-center">
-              <UserPlus className="mr-2 text-indigo-600" /> Invite Employee
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <input 
-                  type="text"
-                  name="name"
-                  value={inviteFormData.name}
-                  onChange={handleInviteFormChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Enter employee name"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                <input 
-                  type="email"
-                  name="email"
-                  value={inviteFormData.email}
-                  onChange={handleInviteFormChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Enter email address"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                <select 
-                  name="role"
-                  value={inviteFormData.role}
-                  onChange={handleInviteFormChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="employee">Employee</option>
-                  <option value="manager">Manager</option>
-                </select>
-              </div>
-              <div className="flex justify-end space-x-2 mt-4">
-                <button 
-                  onClick={() => setIsInviteModalOpen(false)}
-                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={submitInvitation}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
-                >
-                  Send Invitation
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
       <SwotModal />
     </div>
   );

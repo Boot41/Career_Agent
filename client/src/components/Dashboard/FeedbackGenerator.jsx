@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
  */
 const FeedbackGenerator = ({ handleGenerateQuestions, onRoleChange }) => {
   const [role, setRole] = useState(""); // Role input by HR
-  const [feedbackType, setFeedbackType] = useState(""); // Feedback type input by HR
+  const [feedbackType, setFeedbackType] = useState("Performance Review"); // Feedback type input by HR
   const [feedbackReceiver, setFeedbackReceiver] = useState("Manager"); // Who is providing the feedback (default: Manager)
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
@@ -54,23 +54,20 @@ const FeedbackGenerator = ({ handleGenerateQuestions, onRoleChange }) => {
         </div>
       )}
 
-      {/* Role Input */}
-      <input
-        type="text"
+      {/* Role Selection */}
+      <select
         value={role}
-        onChange={handleRoleInputChange}
-        placeholder="Employee Role (e.g., Software Engineer)"
+        onChange={(e) => setRole(e.target.value)}
         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-      />
-
-      {/* Feedback Type Input */}
-      <input
-        type="text"
-        value={feedbackType}
-        onChange={(e) => setFeedbackType(e.target.value)}
-        placeholder="Feedback Type (e.g., Performance Review)"
-        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-      />
+      >
+        <option value="" disabled>Select Employee Role</option>
+        <option value="Software Engineer">Software Engineer</option>
+        <option value="Finance">Finance</option>
+        <option value="Marketing">Marketing</option>
+        <option value="Operations Management">Operations Management</option>
+        <option value="Human Resources">Human Resources</option>
+        <option value="Information Technology">Information Technology</option>
+      </select>
 
       {/* Feedback Receiver Selection */}
       <select
