@@ -40,7 +40,7 @@ const EmployeeDashboard = () => {
     const fetchPendingFeedback = async () => {
       if (userData && userData.id) {
         try {
-          const response = await fetch(`http://localhost:8001/feedback/pending-feedback/?user_id=${userData.id}`);
+          const response = await fetch(`http://0.0.0.0:8001/feedback/pending-feedback/?user_id=${userData.id}`);
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
@@ -87,7 +87,7 @@ const EmployeeDashboard = () => {
     }
   
     try {
-      const response = await fetch(`http://localhost:8001/feedback/submit-answers/`, {
+      const response = await fetch(`http://0.0.0.0:8001/feedback/submit-answers/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -137,7 +137,7 @@ const EmployeeDashboard = () => {
     
     try {
       console.log('Checking SWOT availability for user ID:', userData.id);
-      const response = await axios.get(`http://localhost:8001/feedback/swot-analysis/availability/?user_id=${userData.id}`);
+      const response = await axios.get(`http://0.0.0.0:8001/feedback/swot-analysis/availability/?user_id=${userData.id}`);
       
       console.log('SWOT Analysis API Response:', response);
       
@@ -207,15 +207,21 @@ const EmployeeDashboard = () => {
         {!swotLoading && !swotError && swotData && swotData.length > 0 ? (
           swotData.map((swot, index) => (
             <div key={swot.id} className="mb-8 p-6 border border-gray-200 rounded-lg bg-gray-50">
-              <div className="mb-4 pb-3 border-b border-gray-200">
+            <div className="flex justify-between items-start">
+              <div className="mb-4 pb-3 border-b border-gray-200 flex-1">
                 <h3 className="text-xl font-semibold text-gray-700">SWOT Analysis for Year: {swot.year}</h3>
                 <p className="text-sm text-gray-500">Created: {new Date(swot.created_at).toLocaleDateString()}</p>
               </div>
-              
-              <div className="mb-4">
-                <h4 className="font-bold text-gray-700 mb-2">Summary</h4>
-                <p className="text-gray-600 whitespace-pre-line">{swot.summary}</p>
+              <div className="ml-4 p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                <h4 className="font-bold text-blue-700">Performance Rating</h4>
+                <p className="text-gray-600">{swot.performance_rating ? swot.performance_rating : 'Not Rated'}</p>
               </div>
+            </div>
+
+            <div className="mb-4">
+              <h4 className="font-bold text-gray-700 mb-2">Summary</h4>
+              <p className="text-gray-600 whitespace-pre-line">{swot.summary}</p>
+            </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="p-4 bg-green-50 border border-green-100 rounded-lg">

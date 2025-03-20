@@ -14,7 +14,7 @@ print("=" * 50)
 print(f"Testing SWOT analysis API for user_id: {user_id}, year: {year}, force_new: true")
 
 try:
-    response = requests.get(f"http://localhost:8001/feedback/generate/?user_id={user_id}&year={year}&force_new=true")
+    response = requests.get(f"http://0.0.0.0:8001/feedback/generate/?user_id={user_id}&year={year}&force_new=true")
     
     print(f"Status code: {response.status_code}")
     print(f"Response headers: {response.headers}")

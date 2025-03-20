@@ -1,4 +1,4 @@
-from rest_framework.views import APIView
+from rest_framework.views import APIView, csrf_exempt
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework.decorators import api_view
@@ -8,11 +8,12 @@ import os
 import requests
 import groq
 
+# @method_decorator(csrf_exempt, name='post')
 class LiveKitTokenView(APIView):
     permission_classes = [AllowAny]  # Allow anyone to access this API
     LIVEKIT_API_KEY = "APIhg5odtGHviT8"
     LIVEKIT_API_SECRET = "W0CrJ73lC759EiY7O9PWCPv0xQNEBECjtLk76HImf4D"
-
+    @csrf_exempt
     def post(self, request):
         if not self.LIVEKIT_API_KEY or not self.LIVEKIT_API_SECRET:
             return Response({"error": "Missing API credentials"}, status=500)

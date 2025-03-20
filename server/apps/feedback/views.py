@@ -185,12 +185,15 @@ class GenerateQuestionsView(APIView):
                 f"What impact has been made in the role and organization?"
             ]
 
+@method_decorator(csrf_exempt, name='dispatch')
 class GenerateFeedbackView(APIView):
     """Handles feedback question generation using Groq API."""
-
+    @csrf_exempt
     def post(self, request):
         """Handles feedback question generation based on role and feedback perspective."""
         # Validate request data
+        print("=== GenerateFeedbackView.post() called ===")
+        print(f"Request data: {request.data}")
         serializer = FeedbackPromptSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -556,6 +559,7 @@ class ManagedEmployeesView(APIView):
         
         return Response(employee_data)
 
+# @method_decorator(csrf_exempt, name='dispatch')
 class GenerateSwotAnalysisView(APIView):
     """API to generate SWOT analysis based on feedback summaries using Groq API."""
 

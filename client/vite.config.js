@@ -12,17 +12,17 @@ export default defineConfig({
   server: {
     proxy: {
       '/auth': {
-        target: 'http://localhost:8001',
+        target: 'http://l0.0.0.0:8001',
         changeOrigin: true,
         secure: false
       },
       '/org': {
-        target: 'http://localhost:8001',
+        target: 'http://l0.0.0.0:8001',
         changeOrigin: true,
         secure: false
       },
       '/feedback': {
-        target: 'http://localhost:8001',
+        target: 'http://l0.0.0.0:8001',
         changeOrigin: true,
         secure: false
       }

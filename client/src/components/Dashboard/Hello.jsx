@@ -19,24 +19,24 @@ const Hello = ({ noofEmp }) => {
       if (!id || !orgId) return; // Ensure both IDs are available
       // console.log(id) 
       // Fetch pending feedback count
-      axios.get(`http://localhost:8001/feedback/pending-feedback/?user_id=${id}`)
+      axios.get(`http://0.0.0.0:8001/feedback/pending-feedback/?user_id=${id}`)
           .then((res) => setPendingFeedbackCount(res.data.length)).then(() => {
             console.log(pendingFeedbackCount);
           })
           .catch((err) => console.error("Error fetching pending feedback", err));
   
       // Fetch submitted feedback count
-      axios.get(`http://localhost:8001/feedback/total-submitted-feedbacks/?id=${orgId}`)
+      axios.get(`http://0.0.0.0:8001/feedback/total-submitted-feedbacks/?id=${orgId}`)
           .then((res) => setSubmittedFeedbackCount(res.data.submitted_feedback || 0)) // Adjusted based on backend
           .catch((err) => console.error("Error fetching submitted feedback", err));
   
       // Fetch total pending feedbacks
-      axios.get(`http://localhost:8001/feedback/total-pending-feedbacks/?id=${orgId}`)
+      axios.get(`http://0.0.0.0:8001/feedback/total-pending-feedbacks/?id=${orgId}`)
           .then((res) => setTotalPendingFeedbacks(res.data.total_pending_feedbacks || 0)) // Adjusted based on backend
           .catch((err) => console.error("Error fetching total pending feedbacks", err));
   
       // Fetch total employees
-      axios.get(`http://localhost:8001/org/total-employees/?id=${orgId}`)
+      axios.get(`http://0.0.0.0:8001/org/total-employees/?id=${orgId}`)
           .then((res) => setTotalEmployees(res.data.total_employees || 0)) // Adjusted based on backend
           .catch((err) => console.error("Error fetching total employees", err));
   }, [id, orgId]);

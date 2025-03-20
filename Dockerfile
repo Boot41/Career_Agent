@@ -9,9 +9,6 @@ RUN npm run build
 # 2) Build Django backend
 FROM python:3.10-slim AS production
 
-# RUN apt-get update && apt-get install -y --no-install-recommends tesseract-ocr && \
-#     rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1

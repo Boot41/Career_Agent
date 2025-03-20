@@ -35,7 +35,7 @@ SECRET_KEY = 'django-insecure-_+w=(uz5mefsw&)$vjdjc9_1z-oekvxwh-c)o2e*07z3v9e+l_
 DEBUG = True
 # ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*', "http://localhost:8001"]
 # Application definition
 
 INSTALLED_APPS = [
@@ -59,7 +59,7 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -163,6 +163,9 @@ CORS_ALLOW_METHODS = [
     'POST',
     'PUT',
 ]
+CSRF_TRUSTED_ORIGINS = [
+    "*"
+]
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -171,7 +174,7 @@ CORS_ALLOW_HEADERS = [
     'dnt',
     'origin',
     'user-agent',
-    'x-csrftoken',
+    # 'x-csrftoken',
     'x-requested-with',
 ]
 
