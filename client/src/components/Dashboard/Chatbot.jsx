@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
-const Chatbot = ({ isOpen, setIsOpen, userId }) => {
+const Chatbot = ({ isOpen, setIsOpen, userList}) => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
   const messagesEndRef = useRef(null);
-
+  console.log(userList)
   const handleSend = async () => {
     if (!input.trim()) return;
 
@@ -15,7 +15,7 @@ const Chatbot = ({ isOpen, setIsOpen, userId }) => {
     try {
       const response = await axios.post('http://localhost:8001/chatbot/ask/', {
         message: input,
-        user_id: userId,
+        user_list: userList
       });
       const botMessage = { text: response.data.response, sender: 'bot' };
       setMessages((prev) => [...prev, botMessage]);
