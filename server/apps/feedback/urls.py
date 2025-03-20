@@ -13,6 +13,8 @@ from .views import (
     get_hierarchical_submitted_feedback,
     delete_feedbacks,
     get_pending_feedback,
+    get_total_pending_feedbacks,
+    get_submitted_feedback,
 )
 
 urlpatterns = [
@@ -31,4 +33,6 @@ urlpatterns = [
     path('api/create-feedback/', CreateFeedbackAPI.as_view(), name='api_create_feedback'),
     path('pending-feedback/', get_pending_feedback, name='api_get_pending_feedback'),
     path('api/delete-feedbacks/', delete_feedbacks, name='api_delete_feedbacks'),
+    path('total-pending-feedbacks/', get_total_pending_feedbacks, name='get_total_pending_feedbacks'),
+    path('total-submitted-feedbacks/', get_submitted_feedback, name='get_total_submitted_feedbacks')
 ]

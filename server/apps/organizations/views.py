@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from apps.authentication.models import AuthUser
 from apps.organizations.models import Organization  # Correct import for Organization model
 import uuid
+from rest_framework.decorators import api_view
 
 @csrf_exempt
 @require_http_methods(["GET"])
@@ -78,3 +79,15 @@ def get_organization_hierarchy(request):
             "success": False,
             "message": str(e)
         }, status=500)
+
+
+@api_view(["GET"])
+def get_total_employees(request):
+    try:
+        id = request.query_params.get('id')
+        if not id:
+            return Response({"error": "No user ID provided"}, status=status.HTTP_400_BAD_REQUEST)
+        total_employees = AuthUser.objects.filter(organization_id=id).count()
+        return JsonResponse({"total_employees": total_employees}, status=200)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

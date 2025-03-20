@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios, { all } from 'axios';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import HRRightSidebar from './HRRightSidebar';
@@ -41,6 +41,7 @@ const HRDashboard = () => {
     role: 'employee'
   });
 
+  const [noofEmp, setNoofEmp] = useState(0);
   // Feedback Generation State
   const [activeTab, setActiveTab] = useState('hello');
   const [selectedFeedbackEmployee, setSelectedFeedbackEmployee] = useState(null);
@@ -112,6 +113,7 @@ const HRDashboard = () => {
 
     fetchOrganizationHierarchy();
   }, []);
+  console.log(organizationHierarchy)
 
   const handleEmployeeSelect = (employee) => {
     setSelectedEmployee(employee);
@@ -411,7 +413,6 @@ const deleteSWOTAnalysis = async (swotId) => {
         displayName: `${employee.name} (Unassigned)`
       }))
     ];
-
     return (
       <div className="space-y-6">
         <div className="bg-white shadow-md rounded-lg p-6">
@@ -685,7 +686,7 @@ const deleteSWOTAnalysis = async (swotId) => {
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
-                    Hello
+                    Home
                   </button>
                   <button
                     onClick={() => setActiveTab('hierarchy')}
@@ -751,7 +752,7 @@ const deleteSWOTAnalysis = async (swotId) => {
 ) : activeTab === 'swot' ? (
   renderSWOTAnalysis()
 ) : (
-  <Hello />
+  <Hello noofEmp={noofEmp}/>
 )}
             </div>
           </div>

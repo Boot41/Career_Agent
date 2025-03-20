@@ -867,12 +867,39 @@ def delete_feedbacks(request):
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@api_view(["GET"])
 def get_pending_feedback(request):
+    try:
+        id = request.query_params.get('user_id')
+        print(f"Received user_id: {id}")  # Debugging line
+        if not id:
+            return Response({"error": "No user ID provided"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        pending_feedback = Feedback.objects.filter(giver=id, is_submitted=False).count()
+        
+        # Return the count directly
+        return JsonResponse(pending_feedback, safe=False, status=200)  # Use safe=False to allow non-dict response
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(["GET"])
+def get_total_pending_feedbacks(request):
     try:
         id = request.query_params.get('id')
         if not id:
             return Response({"error": "No user ID provided"}, status=status.HTTP_400_BAD_REQUEST)
-        pending_feedback = Feedback.objects.filter(giver=id, is_submitted=False).count()
-        return JsonResponse({"pending_feedback": pending_feedback}, status=200)
+        total_pending_feedbacks = Feedback.objects.filter(organization_id=id, is_submitted=False).count()
+        return JsonResponse({"total_pending_feedbacks": total_pending_feedbacks}, status=200)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(["GET"])
+def get_submitted_feedback(request):
+    try:
+        id = request.query_params.get('id')
+        if not id:
+            return Response({"error": "No user ID provided"}, status=status.HTTP_400_BAD_REQUEST)
+        submitted_feedback = Feedback.objects.filter(organization_id=id, is_submitted=True).count()
+        return JsonResponse({"submitted_feedback": submitted_feedback}, status=200)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
